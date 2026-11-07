@@ -683,6 +683,16 @@ namespace AgOpenGPS
                     catch (Exception ex) { Log.EventWriter("Kiosk auto-resume failed: " + ex.Message); }
                 }));
             }
+
+            // Johan fork: start screen on top of everything, closed by the Rijden button
+            if (Settings.Default.setWindow_isKioskMode && Settings.Default.setDisplay_isStartScreen)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    try { using (var start = new FormStart(this)) start.ShowDialog(this); }
+                    catch (Exception ex) { Log.EventWriter("Start screen failed: " + ex.Message); }
+                }));
+            }
         }
 
         #region Shutdown Handling
