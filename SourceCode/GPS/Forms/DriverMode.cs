@@ -87,17 +87,23 @@ namespace AgOpenGPS
                 btnResetToolHeading.Visible = false;
             }
 
-            // Right column: section control buttons
+            // Right column: section control and automatic U-turn (Johan turns by hand on grassland)
             if (hide)
             {
                 btnSectionMasterManual.Visible = false;
                 btnSectionMasterAuto.Visible = false;
                 btnIsobusSectionControl.Visible = false;
+                btnAutoYouTurn.Visible = false;
+                btnYouSkipEnable.Visible = false;
+                cboxpRowWidth.Visible = false;
             }
             else
             {
                 btnSectionMasterManual.Visible = Settings.Default.setFeatures.isManualSectionOn;
                 btnSectionMasterAuto.Visible = Settings.Default.setFeatures.isAutoSectionOn;
+                btnAutoYouTurn.Visible = Settings.Default.setFeatures.isYouTurnOn;
+                btnYouSkipEnable.Visible = Settings.Default.setFeatures.isYouTurnOn;
+                cboxpRowWidth.Visible = Settings.Default.setFeatures.isYouTurnOn;
             }
         }
     }
