@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using AgLibrary.Logging;
+using AgOpenGPS.Core.Streamers;
 using AgOpenGPS.Properties;
 
 namespace AgOpenGPS
@@ -21,7 +22,7 @@ namespace AgOpenGPS
         private const int driverLongPressMs = 3000;
 
         private Panel panelJohanTop, panelJohanBottom;
-        private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto;
+        private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto, btnJLuchtfoto, btnJThema;
         private Label lblJLijn, lblJRtk, lblJTrekker, lblJSpeed, lblJBewerkt;
         private Timer johanTick;
         private bool johanLayoutBusy;
@@ -85,11 +86,35 @@ namespace AgOpenGPS
             if (!isDriverMode) return;
 
             fileToolStripMenuItem.HideDropDown();
-            isDriverUnlocked = !isDriverUnlocked;
+            if (isDriverUnlocked)
+            {
+                // long press on the hamburger menu in the original layout: back to the driver screen
+                isDriverUnlocked = false;
+                ApplyDriverMode();
+                TimedMessageBox(2000, "Chauffeursmodus", "Rijscherm weer actief");
+                Log.EventWriter("Driver mode: back to driver layout");
+                return;
+            }
+            // long press on the speed block: the Beheer page from the canvas
+            using (var f = new FormBeheer(this)) f.ShowDialog(this);
+        }
+
+        // Called from FormBeheer; the handlers themselves are private to FormGPS
+        public void BeheerOpenConfig() => btnConfig_Click(btnJobMenu, EventArgs.Empty);
+        public void BeheerOpenSteer() => btnAutoSteerConfig_Click(btnAutoSteerConfig, EventArgs.Empty);
+        public void BeheerOpenAgIO() => btnStartAgIO_Click(btnStartAgIO, EventArgs.Empty);
+        public void BeheerOpenLog()
+        {
+            Form f = Application.OpenForms["FormEventViewer"];
+            if (f != null) { f.Focus(); return; }
+            new FormEventViewer(System.IO.Path.Combine(RegistrySettings.logsDirectory, "AgOpenGPS_Events_Log.txt")).Show(this);
+        }
+        public void BeheerShowOriginal()
+        {
+            isDriverUnlocked = true;
             ApplyDriverMode();
-            TimedMessageBox(2000, "Chauffeursmodus",
-                isDriverUnlocked ? "Beheer tijdelijk zichtbaar" : "Beheer weer verborgen");
-            Log.EventWriter("Driver mode unlock: " + isDriverUnlocked);
+            TimedMessageBox(3000, "Originele indeling", "Terug naar het rijscherm: houd het menu linksboven 3 s ingedrukt");
+            Log.EventWriter("Driver mode: original layout shown");
         }
 
         #region Bars
@@ -158,7 +183,22 @@ namespace AgOpenGPS
                 c.MouseLeave += (s, e) => driverPressTimer.Stop();
             }
 
-            panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed });
+            // aerial photo on/off (per field, AgOpenGPS keeps it as BackPic in the field folder)
+            btnJLuchtfoto = JohanButton("", "photo_licht_64", 24, 10F, false);
+            btnJLuchtfoto.Click += (s, e) => ToggleLuchtfoto();
+
+            // dark/light theme; the switch restarts the program so every window follows
+            btnJThema = JohanButton("", JohanTheme.IsLight ? "moon_licht_64" : "sun_licht_64", 24, 10F, false);
+            btnJThema.Click += (s, e) =>
+            {
+                Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
+                Settings.Default.Save();
+                Log.EventWriter("Theme switch, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
+                if (isJobStarted) { try { FileSaveEverythingBeforeClosingField().Wait(5000); } catch { } }
+                Application.Restart();
+            };
+
+            panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema });
             Controls.Add(panelJohanTop);
 
             // ---- bottom bar
@@ -168,7 +208,13 @@ namespace AgOpenGPS
             btnJAndereLijn.Click += (s, e) => JohanAndereLijn();
 
             btnJVerschuif = JohanButton("Lijn verschuiven", "arrows-horizontal_licht_64", 32, 12F, true);
-            btnJVerschuif.Click += (s, e) => { if (trk.idx > -1) btnNudge_Click(btnNudge, EventArgs.Empty); };
+            btnJVerschuif.Click += (s, e) =>
+            {
+                if (trk.idx < 0) { TimedMessageBox(1500, "Lijn verschuiven", "Eerst een lijn kiezen"); return; }
+                Form open = Application.OpenForms["FormVerschuif"];
+                if (open != null) { open.Focus(); return; }
+                new FormVerschuif(this).Show(this);
+            };
 
             btnJKopakker = JohanButton("Kopakker", "box-margin_licht_64", 32, 12F, true);
             btnJKopakker.Click += (s, e) => btnHeadlandOnOff_Click(btnHeadlandOnOff, EventArgs.Empty);
@@ -187,6 +233,27 @@ namespace AgOpenGPS
             lblJBewerkt.Visible = false;
             Controls.Add(lblJBewerkt);
         }
+
+        // Aerial photo: off = keep the loaded map aside; on = restore it, load it from the field folder,
+        // or open the AgOpenGPS map window to fetch one (needs internet)
+        private void ToggleLuchtfoto()
+        {
+            if (!isJobStarted) { TimedMessageBox(1500, "Luchtfoto", "Eerst een perceel openen"); return; }
+            if (worldGrid.HasBingMap)
+            {
+                // the photo stays on disk (BackPic in the field folder); switching on reads it again
+                worldGrid.BingMap = null;
+
+                return;
+            }
+            var dirInfo = new System.IO.DirectoryInfo(System.IO.Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory));
+            var fromDisk = new BingMapStreamer().TryRead(dirInfo);
+            if (fromDisk != null) { worldGrid.BingMap = fromDisk; return; }
+            Form open = Application.OpenForms["FormMap"];
+            if (open != null) { open.Focus(); return; }
+            new FormMap(this).Show(this);
+        }
+
 
         private void JohanAndereLijn()
         {
@@ -234,6 +301,8 @@ namespace AgOpenGPS
                 lblJSpeed.Bounds = new Rectangle(w - 16 - 200, 8, 200, JohanTopH - 16);
                 lblJTrekker.Bounds = new Rectangle(w - 16 - 200 - 130, y, 130, bh);
                 lblJRtk.Bounds = new Rectangle(w - 16 - 200 - 130 - 150, y, 150, bh);
+                btnJThema.Bounds = new Rectangle(w - 16 - 200 - 130 - 150 - 12 - bh, y, bh, bh);
+                btnJLuchtfoto.Bounds = new Rectangle(btnJThema.Left - 8 - bh, y, bh, bh);
 
                 // bottom bar: 1fr 1fr 1fr 2fr, 12 px gaps, 14/16 px padding
                 int gap = 12, pad = 16, top = 14, bhh = JohanBottomH - 28;
@@ -350,8 +419,13 @@ namespace AgOpenGPS
             btnJAuto.Text = isBtnAutoSteerOn ? "Autosturen AAN" : "Autosturen uit";
             btnJAuto.BackColor = isBtnAutoSteerOn ? JohanTheme.Green : JohanTheme.Grey;
 
-            foreach (Button b in new[] { btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto })
+            foreach (Button b in new[] { btnJAndereLijn, btnJVerschuif, btnJKopakker })
                 b.ForeColor = b.Enabled ? JohanTheme.Text : JohanTheme.Muted;
+            // the big button is always on a dark green or grey ground, in both themes
+            btnJAuto.ForeColor = btnJAuto.Enabled ? Color.White : Color.FromArgb(203, 213, 225);
+            btnJKopakker.ForeColor = hasHeadland && bnd.isHeadlandOn ? Color.White : btnJKopakker.ForeColor;
+
+            btnJLuchtfoto.BackColor = isJobStarted && worldGrid.HasBingMap ? JohanTheme.Green : JohanTheme.Panel;
         }
 
         #endregion

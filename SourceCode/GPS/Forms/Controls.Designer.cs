@@ -576,7 +576,8 @@ namespace AgOpenGPS
                 }
             }
 
-            using (var form = new FormJob(this))
+            // Johan fork: in driver mode the themed "Nieuw perceel" menu replaces FormJob (same dialog results)
+            using (Form form = (isDriverMode && !isDriverUnlocked) ? (Form)new FormNieuwPerceel(this) : new FormJob(this))
             {
                 var result = form.ShowDialog(this);
 

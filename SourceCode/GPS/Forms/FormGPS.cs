@@ -317,6 +317,7 @@ namespace AgOpenGPS
             // Johan fork: a lock file pins the driver setup; icon skin and theme must be in place
             // before the designer loads the button images
             JohanLock.Enforce();
+            JohanTheme.Init(Settings.Default.setDisplay_isJohanLight);
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {

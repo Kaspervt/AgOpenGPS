@@ -68,6 +68,7 @@ namespace AgOpenGPS.Properties
         public bool setDisplay_isStartScreen = false;
         // Johan fork: Tabler icon skin on the main buttons (needs johan-icons folder next to the exe)
         public bool setDisplay_isJohanIcons = false;
+        public bool setDisplay_isJohanLight = false;
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

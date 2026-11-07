@@ -13,12 +13,29 @@ namespace AgOpenGPS
     // colours (green on, red off, yellow warning) are left alone.
     public static class JohanTheme
     {
-        public static readonly Color Bg = Color.FromArgb(15, 23, 42);
-        public static readonly Color Bar = Color.FromArgb(17, 28, 51);
-        public static readonly Color Panel = Color.FromArgb(30, 41, 59);
-        public static readonly Color PanelLight = Color.FromArgb(51, 65, 85);
-        public static readonly Color Text = Color.FromArgb(248, 250, 252);
-        public static readonly Color Muted = Color.FromArgb(148, 163, 184);
+        // palette from the canvas; Init() switches to the light set
+        public static Color Bg = Color.FromArgb(15, 23, 42);
+        public static Color Bar = Color.FromArgb(17, 28, 51);
+        public static Color Panel = Color.FromArgb(30, 41, 59);
+        public static Color PanelLight = Color.FromArgb(51, 65, 85);
+        public static Color Text = Color.FromArgb(248, 250, 252);
+        public static Color Muted = Color.FromArgb(148, 163, 184);
+        public static bool IsLight { get; private set; }
+
+        // Called once at start, before any form is built; a switch at runtime restarts the program
+        public static void Init(bool light)
+        {
+            IsLight = light;
+            if (light)
+            {
+                Bg = Color.FromArgb(241, 245, 249);
+                Bar = Color.White;
+                Panel = Color.FromArgb(226, 232, 240);
+                PanelLight = Color.FromArgb(203, 213, 225);
+                Text = Color.FromArgb(15, 23, 42);
+                Muted = Color.FromArgb(71, 85, 105);
+            }
+        }
         public static readonly Color Green = Color.FromArgb(22, 163, 74);
         public static readonly Color Red = Color.FromArgb(220, 38, 38);
         public static readonly Color Amber = Color.FromArgb(245, 158, 11);
@@ -36,7 +53,27 @@ namespace AgOpenGPS
         private static Timer sweeper;
 
         // Forms built for this fork already draw in the theme
-        private static bool IsOwn(Form f) => f is FormStart || f is FormPerceel || f is FormWerktuig;
+        private static bool IsOwn(Form f) => f is FormStart || f is FormPerceel || f is FormWerktuig
+                                             || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif;
+
+        // Windows 10/11: dark title bar and frame for the dialogs that keep a border
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+        private static void DarkTitleBar(Form f)
+        {
+            try
+            {
+                if (!f.IsHandleCreated) return;
+                int on = 1;
+                if (DwmSetWindowAttribute(f.Handle, 20, ref on, 4) != 0) DwmSetWindowAttribute(f.Handle, 19, ref on, 4);
+                int caption = ColorTranslator.ToWin32(Bar);     // DWMWA_CAPTION_COLOR, Windows 11
+                DwmSetWindowAttribute(f.Handle, 35, ref caption, 4);
+                int text = ColorTranslator.ToWin32(Text);       // DWMWA_TEXT_COLOR
+                DwmSetWindowAttribute(f.Handle, 36, ref text, 4);
+            }
+            catch { }
+        }
 
         public static void Install()
         {
@@ -126,6 +163,11 @@ namespace AgOpenGPS
             {
                 form.BackColor = Bg;
                 form.ForeColor = Text;
+                if (form.FormBorderStyle != FormBorderStyle.None)
+                {
+                    if (form.IsHandleCreated) DarkTitleBar(form);
+                    else form.HandleCreated += (s, e) => DarkTitleBar((Form)s);
+                }
             }
             else if (c is ToolStrip strip)
             {

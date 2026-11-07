@@ -233,8 +233,12 @@ namespace AgOpenGPS
 
         // A Tabler icon from johan-icons (file name without .png) scaled to a square of the given size,
         // for the fork's own buttons. Null when the file is missing, so callers fall back to text only.
+        // In the light theme the white ("licht") icons become the dark ones
+        private static string Resolve(string file) => JohanTheme.IsLight ? file.Replace("_licht_", "_donker_") : file;
+
         public static Bitmap Icon(string file, int size)
         {
+            file = Resolve(file);
             string key = file + "@" + size;
             lock (iconCache)
             {
@@ -319,7 +323,7 @@ namespace AgOpenGPS
                 {
                     if (cache.TryGetValue(name, out Bitmap cached)) return cached;
 
-                    string path = Path.Combine(dir, file + ".png");
+                    string path = Path.Combine(dir, Resolve(file) + ".png");
                     if (!File.Exists(path)) return original;
 
                     var size = (original as Image)?.Size ?? new Size(64, 64);
