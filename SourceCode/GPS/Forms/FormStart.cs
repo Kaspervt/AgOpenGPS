@@ -45,7 +45,7 @@ namespace AgOpenGPS
             BuildLayout();
 
             tick.Tick += (s, e) => UpdateStatus();
-            Load += (s, e) => { UpdateStatus(); tick.Start(); };
+            Load += (s, e) => { UpdateStatus(); tick.Start(); ArmSnapshot(); };
             FormClosed += (s, e) => tick.Stop();
             KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) Close(); };
         }
@@ -255,6 +255,32 @@ namespace AgOpenGPS
         protected override void OnPaintBackground(PaintEventArgs e)
         {
             e.Graphics.Clear(bg);
+        }
+
+        // Debug aid: "AgOpenGPS.exe --snapshot C:\pad\start.png" writes the start screen to a PNG
+        // two seconds after it opens, so it can be checked without looking at the screen.
+        private void ArmSnapshot()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            int i = Array.IndexOf(args, "--snapshot");
+            if (i < 0 || i + 1 >= args.Length) return;
+            string path = args[i + 1];
+            var t = new Timer { Interval = 2000 };
+            t.Tick += (s, e) =>
+            {
+                t.Stop();
+                try
+                {
+                    using (var bmp = new Bitmap(Width, Height))
+                    {
+                        DrawToBitmap(bmp, new Rectangle(0, 0, Width, Height));
+                        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                    Log.EventWriter("Start screen snapshot written: " + path);
+                }
+                catch (Exception ex) { Log.EventWriter("Start screen snapshot failed: " + ex.Message); }
+            };
+            t.Start();
         }
 
         // One status line: colored dot, name, detail
