@@ -26,6 +26,31 @@ namespace AgOpenGPS
             fileToolStripMenuItem.MouseDown += (s, e) => { if (isDriverMode) driverPressTimer.Start(); };
             fileToolStripMenuItem.MouseUp += (s, e) => driverPressTimer.Stop();
             fileToolStripMenuItem.MouseLeave += (s, e) => driverPressTimer.Stop();
+
+            // Debug aid: "--snapshot-main <png>" writes the main form to a PNG after 10 s
+            // (the OpenGL map stays black in such a capture, the buttons do show)
+            string[] args = Environment.GetCommandLineArgs();
+            int i = Array.IndexOf(args, "--snapshot-main");
+            if (i >= 0 && i + 1 < args.Length)
+            {
+                string path = args[i + 1];
+                var t = new Timer { Interval = 10000 };
+                t.Tick += (s, e) =>
+                {
+                    t.Stop();
+                    try
+                    {
+                        using (var bmp = new System.Drawing.Bitmap(Width, Height))
+                        {
+                            DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, Width, Height));
+                            bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                        Log.EventWriter("Main form snapshot written: " + path);
+                    }
+                    catch (Exception ex) { Log.EventWriter("Main form snapshot failed: " + ex.Message); }
+                };
+                t.Start();
+            }
         }
 
         private void DriverPressTimer_Tick(object sender, EventArgs e)

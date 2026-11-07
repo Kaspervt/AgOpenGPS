@@ -314,6 +314,9 @@ namespace AgOpenGPS
 
         public FormGPS()
         {
+            // Johan fork: icon skin must be in place before the designer loads the button images
+            if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
+
             //winform initialization
             InitializeComponent();
 

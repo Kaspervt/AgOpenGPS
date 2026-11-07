@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Johan fork: Tabler-based icon skin, loaded at runtime by JohanSkin.cs -->
+    <None Include="btnImages\johan\*.png" Link="johan-icons\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="License.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

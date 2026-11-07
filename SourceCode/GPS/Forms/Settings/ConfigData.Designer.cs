@@ -369,7 +369,7 @@ namespace AgOpenGPS
         #region Features On Off
 
         // Johan fork: driver mode switch, created in code so the designer file stays untouched
-        private CheckBox cboxDriverMode, cboxStartScreen;
+        private CheckBox cboxDriverMode, cboxStartScreen, cboxJohanIcons;
 
         private CheckBox MakeJohanCheckbox(string text, int top)
         {
@@ -378,11 +378,11 @@ namespace AgOpenGPS
                 Appearance = Appearance.Button,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = System.Drawing.Color.WhiteSmoke,
-                Font = new System.Drawing.Font("Tahoma", 11F, System.Drawing.FontStyle.Bold),
+                Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Bold),
                 Text = text,
                 TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
                 Location = new System.Drawing.Point(700, top),
-                Size = new System.Drawing.Size(140, 36),
+                Size = new System.Drawing.Size(140, 27),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
             c.FlatAppearance.CheckedBackColor = System.Drawing.Color.LightGreen;
@@ -394,7 +394,8 @@ namespace AgOpenGPS
         {
             if (cboxDriverMode != null) return;
             cboxDriverMode = MakeJohanCheckbox("Chauffeur", 495);
-            cboxStartScreen = MakeJohanCheckbox("Startscherm", 536);
+            cboxStartScreen = MakeJohanCheckbox("Startscherm", 525);
+            cboxJohanIcons = MakeJohanCheckbox("Iconen (herstart)", 555);
         }
 
         private void tabBtns_Enter(object sender, EventArgs e)
@@ -402,6 +403,7 @@ namespace AgOpenGPS
             EnsureDriverModeCheckbox();
             cboxDriverMode.Checked = Properties.Settings.Default.setDisplay_isDriverMode;
             cboxStartScreen.Checked = Properties.Settings.Default.setDisplay_isStartScreen;
+            cboxJohanIcons.Checked = Properties.Settings.Default.setDisplay_isJohanIcons;
 
             cboxFeatureTram.Checked = Properties.Settings.Default.setFeatures.isTramOn;
             cboxFeatureHeadland.Checked = Properties.Settings.Default.setFeatures.isHeadlandOn;
@@ -474,6 +476,7 @@ namespace AgOpenGPS
                 mf.isDriverMode = cboxDriverMode.Checked;
                 mf.ApplyDriverMode();
                 Properties.Settings.Default.setDisplay_isStartScreen = cboxStartScreen.Checked;
+                Properties.Settings.Default.setDisplay_isJohanIcons = cboxJohanIcons.Checked;
             }
 
             Properties.Settings.Default.Save();
