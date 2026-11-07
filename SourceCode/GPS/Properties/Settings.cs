@@ -60,6 +60,8 @@ namespace AgOpenGPS.Properties
         public bool setDisplay_isAutoStartAgIO = true;
         public bool setDisplay_isAutoOffAgIO = true;
         public bool setWindow_isKioskMode = false;
+        // Johan fork: in kiosk mode, reopen the last field on startup without any dialogs
+        public bool setDisplay_isAutoResumeField = false;
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

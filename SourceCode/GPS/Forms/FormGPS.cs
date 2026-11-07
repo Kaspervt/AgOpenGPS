@@ -415,7 +415,12 @@ namespace AgOpenGPS
                 + DateTime.Now.ToString("f", CultureInfo.InvariantCulture));
             Log.EventWriter("AOG Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
 
-            if (!Properties.Settings.Default.setDisplay_isTermsAccepted)
+            // Johan fork: kiosk mode never shows the terms dialog on a driver's tablet
+            if (Properties.Settings.Default.setWindow_isKioskMode)
+            {
+                Log.EventWriter("Terms dialog skipped (kiosk mode)");
+            }
+            else if (!Properties.Settings.Default.setDisplay_isTermsAccepted)
             {
                 using (var form = new FormTermsAndConditions())
                 {
@@ -661,6 +666,20 @@ namespace AgOpenGPS
             }
             //Init AgShareClient
             agShareClient = new AgShareClient(Settings.Default.AgShareServer, Settings.Default.AgShareApiKey);
+
+            // Johan fork: kiosk start reopens the last field once the main form is up
+            if (Settings.Default.setWindow_isKioskMode
+                && Settings.Default.setDisplay_isAutoResumeField
+                && !string.IsNullOrEmpty(currentFieldDirectory)
+                && File.Exists(Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Field.txt")))
+            {
+                Log.EventWriter("Kiosk auto-resume of field: " + currentFieldDirectory);
+                BeginInvoke(new Action(async () =>
+                {
+                    try { await FileOpenField("Resume"); }
+                    catch (Exception ex) { Log.EventWriter("Kiosk auto-resume failed: " + ex.Message); }
+                }));
+            }
         }
 
         #region Shutdown Handling
