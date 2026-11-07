@@ -557,6 +557,25 @@ namespace AgOpenGPS
                 return;
             }
 
+            // Johan fork: in driver mode the field button shows the simple field list first
+            if (isDriverMode && !isDriverUnlocked)
+            {
+                bool wilNieuw;
+                using (var picker = new FormPerceel(this))
+                {
+                    picker.ShowDialog(this);
+                    wilNieuw = picker.WantsNewField;
+                }
+                if (!wilNieuw)
+                {
+                    FieldMenuButtonEnableDisable(isJobStarted);
+                    toolStripBtnFieldTools.Enabled = isJobStarted;
+                    bnd.isHeadlandOn = (bnd.bndList.Count > 0 && bnd.bndList[0].hdLine.Count > 0);
+                    PanelUpdateRightAndBottom();
+                    return;
+                }
+            }
+
             using (var form = new FormJob(this))
             {
                 var result = form.ShowDialog(this);

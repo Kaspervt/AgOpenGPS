@@ -687,6 +687,14 @@ namespace AgOpenGPS
                 }));
             }
 
+            // Debug aid: "--snapshot-perceel <png>" opens the field picker after 12 s so it can write itself
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "--snapshot-perceel") >= 0)
+            {
+                var snapTimer = new Timer { Interval = 12000 };
+                snapTimer.Tick += (snapSender, snapArgs) => { snapTimer.Stop(); using (var p = new FormPerceel(this)) p.ShowDialog(this); };
+                snapTimer.Start();
+            }
+
             // Johan fork: start screen on top of everything, closed by the Rijden button
             if (Settings.Default.setWindow_isKioskMode && Settings.Default.setDisplay_isStartScreen)
             {

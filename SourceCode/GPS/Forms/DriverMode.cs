@@ -87,6 +87,14 @@ namespace AgOpenGPS
                 btnResetToolHeading.Visible = false;
             }
 
+            // Driver mode: let AgOpenGPS pick the nearest line itself when a field is open
+            // (upstream resets isAutoTrack when a field opens; this runs after that)
+            if (hide && isJobStarted && trk.gArr.Count > 0 && !trk.isAutoTrack)
+            {
+                trk.isAutoTrack = true;
+                btnAutoTrack.Image = Resources.AutoTrack;
+            }
+
             // Right column: section control and automatic U-turn (Johan turns by hand on grassland)
             if (hide)
             {
