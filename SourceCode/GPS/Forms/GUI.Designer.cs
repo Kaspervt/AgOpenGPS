@@ -461,6 +461,10 @@ namespace AgOpenGPS
             //left side
             btnStartAgIO.Visible = Properties.Settings.Default.setFeatures.isAgIOOn;
 
+            // Johan fork: driver mode on top of the feature switches
+            isDriverMode = Properties.Settings.Default.setDisplay_isDriverMode;
+            ApplyDriverMode();
+
             //OGL control
             isUTurnOn = Properties.Settings.Default.setFeatures.isUTurnOn;
             isLateralOn = Properties.Settings.Default.setFeatures.isLateralOn;

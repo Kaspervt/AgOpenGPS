@@ -62,6 +62,8 @@ namespace AgOpenGPS.Properties
         public bool setWindow_isKioskMode = false;
         // Johan fork: in kiosk mode, reopen the last field on startup without any dialogs
         public bool setDisplay_isAutoResumeField = false;
+        // Johan fork: driver mode hides setup menus and rarely used buttons; long press on the main menu unlocks them
+        public bool setDisplay_isDriverMode = false;
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

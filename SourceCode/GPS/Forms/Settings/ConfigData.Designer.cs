@@ -368,8 +368,34 @@ namespace AgOpenGPS
 
         #region Features On Off
 
+        // Johan fork: driver mode switch, created in code so the designer file stays untouched
+        private CheckBox cboxDriverMode;
+
+        private void EnsureDriverModeCheckbox()
+        {
+            if (cboxDriverMode != null) return;
+            cboxDriverMode = new CheckBox
+            {
+                Appearance = Appearance.Button,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = System.Drawing.Color.WhiteSmoke,
+                Font = new System.Drawing.Font("Tahoma", 14F, System.Drawing.FontStyle.Bold),
+                Text = "Chauffeur",
+                TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+                Location = new System.Drawing.Point(700, 495),
+                Size = new System.Drawing.Size(140, 77),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
+                Name = "cboxDriverMode"
+            };
+            cboxDriverMode.FlatAppearance.CheckedBackColor = System.Drawing.Color.LightGreen;
+            tabBtns.Controls.Add(cboxDriverMode);
+        }
+
         private void tabBtns_Enter(object sender, EventArgs e)
         {
+            EnsureDriverModeCheckbox();
+            cboxDriverMode.Checked = Properties.Settings.Default.setDisplay_isDriverMode;
+
             cboxFeatureTram.Checked = Properties.Settings.Default.setFeatures.isTramOn;
             cboxFeatureHeadland.Checked = Properties.Settings.Default.setFeatures.isHeadlandOn;
             cboxFeatureBoundary.Checked = Properties.Settings.Default.setFeatures.isBoundaryOn;
@@ -433,6 +459,14 @@ namespace AgOpenGPS
 
             Properties.Settings.Default.setDisplay_isHardwareMessages = cboxHardwareMessages.Checked;
             UpdateAutoSwitchDualFixSpeedUI();
+
+            // Johan fork: driver mode
+            if (cboxDriverMode != null)
+            {
+                Properties.Settings.Default.setDisplay_isDriverMode = cboxDriverMode.Checked;
+                mf.isDriverMode = cboxDriverMode.Checked;
+                mf.ApplyDriverMode();
+            }
 
             Properties.Settings.Default.Save();
         }

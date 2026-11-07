@@ -440,6 +440,9 @@ namespace AgOpenGPS
 
             this.MouseWheel += ZoomByMouseWheel;
 
+            // Johan fork: long press on the main menu toggles the hidden menus in driver mode
+            InitDriverMode();
+
             //The way we subscribe to the System Event to check when Power Mode has changed.
             Microsoft.Win32.SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
@@ -1452,6 +1455,9 @@ namespace AgOpenGPS
 
         public void FieldMenuButtonEnableDisable(bool isOn)
         {
+            // Johan fork: re-apply driver mode, field open/close may have shown buttons again
+            ApplyDriverMode();
+
             // Always restore items that may have been disabled by Easy Drive
             toolStripConfig.Enabled = true;
             toolStripAllSettings.Enabled = true;
