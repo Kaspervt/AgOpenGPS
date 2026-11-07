@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Windows.Forms;
 using AgLibrary.Logging;
 using AgOpenGPS.Properties;
@@ -6,9 +7,12 @@ using AgOpenGPS.Properties;
 namespace AgOpenGPS
 {
     // Johan fork: driver mode.
-    // Hides the setup menus (tools, settings) and buttons a driver never needs,
-    // without touching the guidance core. A long press (3 s) on the main menu
-    // button unlocks the hidden menus until the next start.
+    // Lays the canvas design over the main form: a top bar (field, line, implement,
+    // RTK, tractor, speed), the OpenGL map, and a bottom bar with four big buttons.
+    // The original AgOpenGPS panels stay in place but hidden, and every button here
+    // calls the existing click handlers, so the guidance core is untouched.
+    // A long press (3 s) on the speed block brings the original layout back
+    // (themed) until the next long press or restart.
     public partial class FormGPS
     {
         public bool isDriverMode = false;
@@ -16,19 +20,41 @@ namespace AgOpenGPS
         private Timer driverPressTimer;
         private const int driverLongPressMs = 3000;
 
+        private Panel panelJohanTop, panelJohanBottom;
+        private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto;
+        private Label lblJLijn, lblJRtk, lblJTrekker, lblJSpeed, lblJBewerkt;
+        private Timer johanTick;
+        private bool johanLayoutBusy;
+        private const int JohanTopH = 68, JohanBottomH = 132;
+
         // Called once from FormGPS_Load.
-        // The main menu opens its dropdown on MouseDown, so MouseUp never reaches the item;
-        // a timer that fires while the button is still held is the reliable way to detect a long press.
         private void InitDriverMode()
         {
             driverPressTimer = new Timer { Interval = driverLongPressMs };
             driverPressTimer.Tick += DriverPressTimer_Tick;
+            // the hamburger menu keeps working as unlock target when the original layout is visible
             fileToolStripMenuItem.MouseDown += (s, e) => { if (isDriverMode) driverPressTimer.Start(); };
             fileToolStripMenuItem.MouseUp += (s, e) => driverPressTimer.Stop();
             fileToolStripMenuItem.MouseLeave += (s, e) => driverPressTimer.Stop();
 
+            BuildJohanBars();
+
+            // upstream re-shows its panels and resizes the map when a field opens or the window changes
+            SizeChanged += (s, e) => LayoutJohan();
+            oglMain.SizeChanged += (s, e) => LayoutJohan();
+            panelRight.VisibleChanged += (s, e) => LayoutJohan();
+            panelBottom.VisibleChanged += (s, e) => LayoutJohan();
+            panelLeft.VisibleChanged += (s, e) => LayoutJohan();
+
+            johanTick = new Timer { Interval = 500 };
+            johanTick.Tick += (s, e) => { try { UpdateJohanBars(); } catch (Exception ex) { Log.EventWriter("Driver bars: " + ex.Message); } };
+            johanTick.Start();
+
+            // LoadSettings ran before the bars existed; lay them out now
+            ApplyDriverMode();
+
             // Debug aid: "--snapshot-main <png>" writes the main form to a PNG after 10 s
-            // (the OpenGL map stays black in such a capture, the buttons do show)
+            // (the OpenGL map stays black in such a capture, the bars do show)
             string[] args = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(args, "--snapshot-main");
             if (i >= 0 && i + 1 < args.Length)
@@ -40,9 +66,9 @@ namespace AgOpenGPS
                     t.Stop();
                     try
                     {
-                        using (var bmp = new System.Drawing.Bitmap(Width, Height))
+                        using (var bmp = new Bitmap(Width, Height))
                         {
-                            DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, Width, Height));
+                            DrawToBitmap(bmp, new Rectangle(0, 0, Width, Height));
                             bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
                         }
                         Log.EventWriter("Main form snapshot written: " + path);
@@ -66,7 +92,271 @@ namespace AgOpenGPS
             Log.EventWriter("Driver mode unlock: " + isDriverUnlocked);
         }
 
-        // Apply visibility. Safe to call repeatedly; upstream code may re-show
+        #region Bars
+
+        private Button JohanButton(string text, string icon, int iconSize, float fontSize, bool iconAbove)
+        {
+            var b = new Button
+            {
+                Text = text,
+                BackColor = JohanTheme.Panel,
+                ForeColor = JohanTheme.Text,
+                FlatStyle = FlatStyle.Flat,
+                Font = JohanTheme.Font(fontSize, FontStyle.Bold),
+                TextImageRelation = iconAbove ? TextImageRelation.ImageAboveText : TextImageRelation.ImageBeforeText,
+                ImageAlign = ContentAlignment.MiddleCenter,
+                TextAlign = ContentAlignment.MiddleCenter,
+                UseVisualStyleBackColor = false,
+                Image = icon == null ? null : JohanSkin.Icon(icon, iconSize)
+            };
+            b.FlatAppearance.BorderSize = 0;
+            b.FlatAppearance.MouseOverBackColor = JohanTheme.PanelLight;
+            b.FlatAppearance.MouseDownBackColor = JohanTheme.Blue;
+            return b;
+        }
+
+        private Label JohanLabel(string text, float size, FontStyle style, Color color)
+        {
+            return new Label
+            {
+                Text = text,
+                Font = JohanTheme.Font(size, style),
+                ForeColor = color,
+                BackColor = Color.Transparent,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+        }
+
+        private void BuildJohanBars()
+        {
+            // ---- top bar
+            panelJohanTop = new Panel { BackColor = JohanTheme.Bar, Visible = false };
+
+            btnJPerceel = JohanButton("Kies perceel", "polygon_licht_64", 22, 12F, false);
+            btnJPerceel.TextAlign = ContentAlignment.MiddleLeft;
+            btnJPerceel.Padding = new Padding(8, 0, 8, 0);
+            btnJPerceel.Click += (s, e) => btnJobMenu_Click(btnJobMenu, EventArgs.Empty);
+
+            lblJLijn = JohanLabel("", 12F, FontStyle.Regular, JohanTheme.Muted);
+
+            btnJWerktuig = JohanButton("Werktuig", "tool_licht_64", 22, 12F, false);
+            btnJWerktuig.TextAlign = ContentAlignment.MiddleLeft;
+            btnJWerktuig.Padding = new Padding(8, 0, 8, 0);
+            btnJWerktuig.Click += (s, e) => { using (var f = new FormWerktuig(this)) f.ShowDialog(this); };
+
+            lblJRtk = JohanLabel("● RTK", 12F, FontStyle.Regular, JohanTheme.Red);
+            lblJTrekker = JohanLabel("● Trekker", 12F, FontStyle.Regular, JohanTheme.Red);
+            lblJSpeed = JohanLabel("0,0 km/u", 20F, FontStyle.Bold, JohanTheme.Text);
+            lblJSpeed.TextAlign = ContentAlignment.MiddleRight;
+
+            // long press on the speed block = unlock
+            foreach (Control c in new Control[] { lblJSpeed, lblJRtk, lblJTrekker })
+            {
+                c.MouseDown += (s, e) => { if (isDriverMode) driverPressTimer.Start(); };
+                c.MouseUp += (s, e) => driverPressTimer.Stop();
+                c.MouseLeave += (s, e) => driverPressTimer.Stop();
+            }
+
+            panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed });
+            Controls.Add(panelJohanTop);
+
+            // ---- bottom bar
+            panelJohanBottom = new Panel { BackColor = JohanTheme.Bar, Visible = false };
+
+            btnJAndereLijn = JohanButton("Andere lijn", "line_licht_64", 32, 12F, true);
+            btnJAndereLijn.Click += (s, e) => JohanAndereLijn();
+
+            btnJVerschuif = JohanButton("Lijn verschuiven", "arrows-horizontal_licht_64", 32, 12F, true);
+            btnJVerschuif.Click += (s, e) => { if (trk.idx > -1) btnNudge_Click(btnNudge, EventArgs.Empty); };
+
+            btnJKopakker = JohanButton("Kopakker", "box-margin_licht_64", 32, 12F, true);
+            btnJKopakker.Click += (s, e) => btnHeadlandOnOff_Click(btnHeadlandOnOff, EventArgs.Empty);
+
+            btnJAuto = JohanButton("Autosturen uit", "steering-wheel_licht_64", 40, 18F, false);
+            btnJAuto.BackColor = JohanTheme.Grey;
+            btnJAuto.Click += (s, e) => btnAutoSteer_Click(btnAutoSteer, EventArgs.Empty);
+
+            panelJohanBottom.Controls.AddRange(new Control[] { btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto });
+            Controls.Add(panelJohanBottom);
+
+            // ---- small overlay bottom right of the map
+            lblJBewerkt = JohanLabel("", 10F, FontStyle.Regular, JohanTheme.Text);
+            lblJBewerkt.BackColor = JohanTheme.Bg;
+            lblJBewerkt.TextAlign = ContentAlignment.MiddleCenter;
+            lblJBewerkt.Visible = false;
+            Controls.Add(lblJBewerkt);
+        }
+
+        private void JohanAndereLijn()
+        {
+            if (!isJobStarted) return;
+            int visible = 0;
+            foreach (var t in trk.gArr) if (t.isVisible) visible++;
+            if (trk.idx == -1 && trk.gArr.Count > 0)
+            {
+                btnTrack_Click(btnTrack, EventArgs.Empty);
+                return;
+            }
+            if (visible > 1)
+            {
+                btnCycleLines_Click(btnCycleLines, EventArgs.Empty);
+            }
+            else
+            {
+                TimedMessageBox(2000, "Lijnen", trk.gArr.Count == 0 ? "Dit perceel heeft nog geen lijnen" : "Dit perceel heeft maar één lijn");
+            }
+        }
+
+        // Positions bars and map; hides the original chrome. Re-entrant safe.
+        private void LayoutJohan()
+        {
+            if (johanLayoutBusy || panelJohanTop == null) return;
+            bool johan = isDriverMode && !isDriverUnlocked;
+            if (!johan) return;
+            johanLayoutBusy = true;
+            try
+            {
+                int w = ClientSize.Width, h = ClientSize.Height;
+
+                panelJohanTop.Bounds = new Rectangle(0, 0, w, JohanTopH);
+                panelJohanBottom.Bounds = new Rectangle(0, h - JohanBottomH, w, JohanBottomH);
+
+                var ogl = new Rectangle(0, JohanTopH, w, h - JohanTopH - JohanBottomH);
+                if (oglMain.Bounds != ogl) oglMain.Bounds = ogl;
+
+                // top bar contents
+                int y = 12, bh = JohanTopH - 24, x = 16;
+                btnJPerceel.Bounds = new Rectangle(x, y, 300, bh); x += 312;
+                lblJLijn.Bounds = new Rectangle(x, y, 220, bh); x += 232;
+                btnJWerktuig.Bounds = new Rectangle(x, y, 260, bh);
+
+                lblJSpeed.Bounds = new Rectangle(w - 16 - 200, 8, 200, JohanTopH - 16);
+                lblJTrekker.Bounds = new Rectangle(w - 16 - 200 - 130, y, 130, bh);
+                lblJRtk.Bounds = new Rectangle(w - 16 - 200 - 130 - 150, y, 150, bh);
+
+                // bottom bar: 1fr 1fr 1fr 2fr, 12 px gaps, 14/16 px padding
+                int gap = 12, pad = 16, top = 14, bhh = JohanBottomH - 28;
+                int unit = (w - 2 * pad - 3 * gap) / 5;
+                int bx = pad;
+                btnJAndereLijn.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
+                btnJVerschuif.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
+                btnJKopakker.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
+                btnJAuto.Bounds = new Rectangle(bx, top, w - pad - bx, bhh);
+
+                lblJBewerkt.Bounds = new Rectangle(w - 20 - 260, h - JohanBottomH - 16 - 34, 260, 34);
+
+                // original chrome away
+                panelLeft.Visible = false;
+                panelRight.Visible = false;
+                panelBottom.Visible = false;
+                panelControlBox.Visible = false;
+                panelNavigation.Visible = false;
+                panelSim.Visible = false;
+                menuStrip1.Visible = false;
+                flp1.Visible = false;
+                oglZoom.Visible = false;
+                lblCurrentField.Visible = false;
+                lblFix.Visible = false;
+                HideSections();
+                HideZones();
+
+                panelJohanTop.Visible = true;
+                panelJohanBottom.Visible = true;
+                lblJBewerkt.Visible = isJobStarted;
+                panelJohanTop.BringToFront();
+                panelJohanBottom.BringToFront();
+                lblJBewerkt.BringToFront();
+            }
+            finally { johanLayoutBusy = false; }
+        }
+
+        private void RestoreOriginalLayout()
+        {
+            if (panelJohanTop == null) return;
+            panelJohanTop.Visible = false;
+            panelJohanBottom.Visible = false;
+            lblJBewerkt.Visible = false;
+            menuStrip1.Visible = true;
+            panelControlBox.Visible = true;
+            panelLeft.Visible = true;
+            oglZoom.Visible = true;
+            lblCurrentField.Visible = true;
+            panelSim.Visible = timerSim.Enabled;
+            PanelsAndOGLSize();
+            PanelUpdateRightAndBottom();
+        }
+
+        private void UpdateJohanBars()
+        {
+            if (panelJohanTop == null || !isDriverMode || isDriverUnlocked || !panelJohanTop.Visible) return;
+
+            double ha = isJobStarted ? fd.areaOuterBoundary / 10000.0 : 0;
+            btnJPerceel.Text = isJobStarted
+                ? currentFieldDirectory + (ha > 0 ? "   " + ha.ToString("0.0") + " ha" : "")
+                : "Kies perceel";
+
+            string lijn;
+            if (!isJobStarted) lijn = "";
+            else if (ct.isContourBtnOn) lijn = "Contour";
+            else if (trk.idx > -1 && trk.idx < trk.gArr.Count) lijn = trk.gArr[trk.idx].name;
+            else lijn = trk.gArr.Count == 0 ? "Geen lijnen" : "Geen lijn gekozen";
+            lblJLijn.Text = lijn == "" ? "" : "Lijn:  " + lijn;
+            lblJLijn.Visible = isJobStarted;
+
+            // upstream lines the section buttons up again after a field opens; keep them away
+            HideSections();
+            HideZones();
+
+            btnJWerktuig.Text = RegistrySettings.toolProfileName + "   " + tool.width.ToString("0.0") + " m";
+
+            int fq = pn.fixQuality;
+            bool gpsAlive = fq > 0 && sentenceCounter < 20;
+            if (!gpsAlive) { lblJRtk.ForeColor = JohanTheme.Red; lblJRtk.Text = "●  Geen GPS"; }
+            else if (fq == 4) { lblJRtk.ForeColor = JohanTheme.Green; lblJRtk.Text = "●  RTK " + pn.age.ToString("0") + " s"; }
+            else if (fq == 5) { lblJRtk.ForeColor = JohanTheme.Amber; lblJRtk.Text = "●  RTK float"; }
+            else if (fq == 8) { lblJRtk.ForeColor = JohanTheme.Green; lblJRtk.Text = "●  Simulator"; }
+            else { lblJRtk.ForeColor = JohanTheme.Amber; lblJRtk.Text = "●  GPS zonder RTK"; }
+
+            // the counter only runs inside the position loop, so without GPS it says nothing
+            bool steerOk = gpsAlive && steerModuleConnectedCounter < 30;
+            lblJTrekker.ForeColor = steerOk ? JohanTheme.Green : JohanTheme.Red;
+            lblJTrekker.Text = "●  Trekker";
+
+            lblJSpeed.Text = SpeedKPH.Replace('.', ',') + " km/u";
+
+            if (isJobStarted && ha > 0)
+                lblJBewerkt.Text = "Bewerkt " + (fd.workedAreaTotal / 10000.0).ToString("0.0") + " van " + ha.ToString("0.0") + " ha";
+            else if (isJobStarted)
+                lblJBewerkt.Text = "Bewerkt " + (fd.workedAreaTotal / 10000.0).ToString("0.0") + " ha";
+            lblJBewerkt.Visible = isJobStarted;
+
+            // bottom buttons
+            btnJAndereLijn.Enabled = isJobStarted && trk.gArr.Count > 0;
+            btnJVerschuif.Enabled = isJobStarted && trk.idx > -1;
+
+            bool hasHeadland = isJobStarted && bnd.bndList.Count > 0 && bnd.bndList[0].hdLine.Count > 0;
+            btnJKopakker.Enabled = hasHeadland;
+            btnJKopakker.Text = !hasHeadland ? "Geen kopakker" : bnd.isHeadlandOn ? "Kopakker aan" : "Kopakker uit";
+            btnJKopakker.BackColor = hasHeadland && bnd.isHeadlandOn ? JohanTheme.Green : JohanTheme.Panel;
+
+            bool canSteer = isJobStarted && (trk.idx > -1 || ct.isContourBtnOn);
+            if (isBtnAutoSteerOn && !canSteer)
+            {
+                // steer safe: upstream does this via a PerformClick on a button we hide
+                btnAutoSteer_Click(btnAutoSteer, EventArgs.Empty);
+            }
+            btnJAuto.Enabled = canSteer;
+            btnJAuto.Text = isBtnAutoSteerOn ? "Autosturen AAN" : "Autosturen uit";
+            btnJAuto.BackColor = isBtnAutoSteerOn ? JohanTheme.Green : JohanTheme.Grey;
+
+            foreach (Button b in new[] { btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto })
+                b.ForeColor = b.Enabled ? JohanTheme.Text : JohanTheme.Muted;
+        }
+
+        #endregion
+
+        // Apply visibility. Safe to call repeatedly; upstream code re-shows
         // some buttons when a field opens, so this runs again from FieldMenuButtonEnableDisable.
         public void ApplyDriverMode()
         {
@@ -78,15 +368,6 @@ namespace AgOpenGPS
             btnNavigationSettings.Visible = !hide;
             btnStartAgIO.Visible = !hide && Settings.Default.setFeatures.isAgIOOn;
 
-            // Bottom row: things a driver on a mower, tedder or slurry tanker does not use
-            if (hide)
-            {
-                btnFlag.Visible = false;
-                btnHydLift.Visible = false;
-                btnTramDisplayMode.Visible = false;
-                btnResetToolHeading.Visible = false;
-            }
-
             // Driver mode: let AgOpenGPS pick the nearest line itself when a field is open
             // (upstream resets isAutoTrack when a field opens; this runs after that)
             if (hide && isJobStarted && trk.gArr.Count > 0 && !trk.isAutoTrack)
@@ -95,17 +376,17 @@ namespace AgOpenGPS
                 btnAutoTrack.Image = Resources.AutoTrack;
             }
 
-            // Right column: section control and automatic U-turn (Johan turns by hand on grassland)
             if (hide)
             {
-                btnSectionMasterManual.Visible = false;
-                btnSectionMasterAuto.Visible = false;
-                btnIsobusSectionControl.Visible = false;
-                btnAutoYouTurn.Visible = false;
-                btnYouSkipEnable.Visible = false;
-                cboxpRowWidth.Visible = false;
+                LayoutJohan();
+                UpdateJohanBars();
             }
-            else
+            else if (panelJohanTop != null && panelJohanTop.Visible)
+            {
+                RestoreOriginalLayout();
+            }
+
+            if (!hide)
             {
                 btnSectionMasterManual.Visible = Settings.Default.setFeatures.isManualSectionOn;
                 btnSectionMasterAuto.Visible = Settings.Default.setFeatures.isAutoSectionOn;

@@ -314,8 +314,15 @@ namespace AgOpenGPS
 
         public FormGPS()
         {
-            // Johan fork: icon skin must be in place before the designer loads the button images
+            // Johan fork: a lock file pins the driver setup; icon skin and theme must be in place
+            // before the designer loads the button images
+            JohanLock.Enforce();
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
+            if (Settings.Default.setDisplay_isDriverMode)
+            {
+                JohanLock.ApplyColours();
+                JohanTheme.Install();
+            }
 
             //winform initialization
             InitializeComponent();
@@ -693,6 +700,59 @@ namespace AgOpenGPS
                 var snapTimer = new Timer { Interval = 12000 };
                 snapTimer.Tick += (snapSender, snapArgs) => { snapTimer.Stop(); using (var p = new FormPerceel(this)) p.ShowDialog(this); };
                 snapTimer.Start();
+            }
+
+            // Debug aid: "--snapshot-form <FormType> <png>" (repeatable) opens that window with this form as
+            // argument 14 s after start (4 s apart for each next one), writes it to a PNG and closes it
+            {
+                string[] sfArgs = Environment.GetCommandLineArgs();
+                int order = 0;
+                for (int ai = 0; ai + 2 < sfArgs.Length; ai++)
+                {
+                    if (sfArgs[ai] != "--snapshot-form") continue;
+                    string typeName = sfArgs[ai + 1], pngPath = sfArgs[ai + 2];
+                    var openTimer = new Timer { Interval = 14000 + 4000 * order++ };
+                    openTimer.Tick += (sfSender, sfEv) =>
+                    {
+                        openTimer.Stop();
+                        try
+                        {
+                            Type t = GetType().Assembly.GetType("AgOpenGPS." + typeName) ?? GetType().Assembly.GetType(typeName);
+                            if (t == null) { Log.EventWriter("Form snapshot: type not found " + typeName); return; }
+                            Form f = null;
+                            foreach (var ctor in t.GetConstructors())
+                            {
+                                var ps = ctor.GetParameters();
+                                if (ps.Length == 1 && ps[0].ParameterType.IsAssignableFrom(typeof(FormGPS))) { f = (Form)ctor.Invoke(new object[] { this }); break; }
+                                if (ps.Length == 0) f = (Form)ctor.Invoke(null);
+                            }
+                            if (f == null) { Log.EventWriter("Form snapshot: no usable constructor " + typeName); return; }
+                            using (f)
+                            {
+                                var shot = new Timer { Interval = 2500 };
+                                shot.Tick += (ss, se) =>
+                                {
+                                    shot.Stop();
+                                    try
+                                    {
+                                        using (var bmp = new Bitmap(f.Width, f.Height))
+                                        {
+                                            f.DrawToBitmap(bmp, new Rectangle(0, 0, f.Width, f.Height));
+                                            bmp.Save(pngPath, System.Drawing.Imaging.ImageFormat.Png);
+                                        }
+                                        Log.EventWriter("Form snapshot written: " + pngPath);
+                                    }
+                                    catch (Exception ex) { Log.EventWriter("Form snapshot failed: " + ex.Message); }
+                                    f.Close();
+                                };
+                                shot.Start();
+                                f.ShowDialog(this);
+                            }
+                        }
+                        catch (Exception ex) { Log.EventWriter("Form snapshot " + typeName + ": " + ex.Message); }
+                    };
+                    openTimer.Start();
+                }
             }
 
             // Johan fork: start screen on top of everything, closed by the Rijden button

@@ -159,7 +159,7 @@ namespace AgOpenGPS
 
             var lblBeheer = new Label
             {
-                Text = "Beheer: houd het menu 3 s ingedrukt",
+                Text = "Beheer: houd de snelheid rechtsboven 3 s ingedrukt",
                 ForeColor = muted,
                 Font = new Font("Segoe UI", 10F),
                 AutoSize = true,
@@ -204,23 +204,7 @@ namespace AgOpenGPS
         private void ToolButton_Click(object sender, EventArgs e)
         {
             string name = (string)((Button)sender).Tag;
-            if (name == RegistrySettings.toolProfileName) return;
-
-            // Same sequence as FormLoadVehicleTool, tool only
-            var result = ToolSettings.Default.Load(name);
-            if (result != LoadResult.Ok)
-            {
-                Log.EventWriter($"Start screen: error loading tool {name} ({result})");
-                mf.TimedMessageBox(3000, "Werktuig", "Kon " + name + " niet laden");
-                return;
-            }
-            RegistrySettings.Save(RegKeys.toolProfileName, name);
-            mf.tool = new CTool(mf);
-            mf.LoadSettings();
-            mf.SetVehicleTextures();
-            mf.SendSettings();
-            Log.EventWriter("Start screen: tool loaded " + name);
-            FillTools();
+            if (FormWerktuig.LoadTool(mf, name)) FillTools();
         }
 
         private void UpdateStatus()
@@ -239,8 +223,9 @@ namespace AgOpenGPS
             rows[1].Set(rtkColor, rtkText);
 
             // Steer board
-            bool boardOk = mf.steerModuleConnectedCounter < 30;
-            rows[2].Set(boardOk ? green : red, boardOk ? "Verbonden" : "Geen verbinding met de stuurprint");
+            // the counter only runs inside the position loop, so without GPS it says nothing
+            bool boardOk = gpsOk && mf.steerModuleConnectedCounter < 30;
+            rows[2].Set(boardOk ? green : red, boardOk ? "Verbonden" : gpsOk ? "Geen verbinding met de stuurprint" : "Onbekend zonder GPS");
 
             // Tractor: steer angle comes back from the board
             bool tractorOk = boardOk && Math.Abs(mf.mc.actualSteerAngleDegrees) < 60;
