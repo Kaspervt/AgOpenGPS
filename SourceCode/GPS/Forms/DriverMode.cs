@@ -103,6 +103,7 @@ namespace AgOpenGPS
             }
             // long press on the speed block: the Beheer page from the canvas
             using (var f = new FormBeheer(this)) f.ShowDialog(this);
+            JohanAfsluitenUitvoeren();
         }
 
         // Called from FormBeheer; the handlers themselves are private to FormGPS
@@ -215,7 +216,7 @@ namespace AgOpenGPS
 
             // settings in plain sight (the long press on the speed still works too)
             btnJInstellingen = JohanButton("", "settings_licht_64", 24, 10F, false);
-            btnJInstellingen.Click += (s, e) => { using (var f = new FormBeheer(this)) f.ShowDialog(this); };
+            btnJInstellingen.Click += (s, e) => { using (var f = new FormBeheer(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
             panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema, btnJInstellingen });
             Controls.Add(panelJohanTop);
 
@@ -234,8 +235,15 @@ namespace AgOpenGPS
                 new FormVerschuif(this).Show(this);
             };
 
-            btnJKopakker = JohanButton("Kopakker", "box-margin_licht_64", 32, 12F, true);
-            btnJKopakker.Click += (s, e) => { if (isJobStarted && bnd.bndList.Count == 0) JohanOpenGrens(); else btnHeadlandOnOff_Click(btnHeadlandOnOff, EventArgs.Empty); };
+            btnJKopakker = JohanButton("Kopakker", "kopakker_licht_64", 32, 12F, true);
+            btnJKopakker.Click += (s, e) =>
+            {
+                if (!isJobStarted) return;
+                if (bnd.bndList.Count == 0) { JohanOpenGrens(); return; }
+                Form open = Application.OpenForms["FormKopakker"];
+                if (open != null) { open.Focus(); return; }
+                new FormKopakker(this).Show(this);
+            };
 
             btnJAuto = JohanButton("Autosturen uit", "steering-wheel_licht_64", 40, 18F, false);
             btnJAuto.BackColor = JohanTheme.Grey;
@@ -262,16 +270,53 @@ namespace AgOpenGPS
             btnJ3D.BackColor = JohanTheme.Bg; btnJ3D.Radius = 12; btnJ3D.Visible = false; btnJ3D.Corner = JohanTheme.FieldGround;
             btnJ3D.Click += (s, e) =>
             {
-                // cycle: 2D (flat) -> 3D schuin (45) -> 3D steil (65) -> 2D
+                // cycle: 2D (flat) -> 3D schuin (45) -> 3D steil (65) -> 2D; any angle in between by dragging
                 double p = camera.PitchInDegrees;
                 double volgende = p > -20 ? -45 : p > -55 ? -65 : 0;
-                camera.FollowDirectionHint = true;
-                camera.PitchInDegrees = volgende;
-                btnJ3D.Image = JohanSkin.Icon(volgende == 0 ? "cube_licht_64" : "map-2_licht_64", 28);
-                TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : volgende == -45 ? "3D, schuin" : "3D, steil");
-                SetZoom();
+                JohanZetHoek(volgende);
+                TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : volgende == -45 ? "3D, schuin (sleep op de kaart voor een andere hoek)" : "3D, steil");
             };
             Controls.Add(btnJ3D);
+            JohanGestures();
+        }
+
+        // Camera tilt: 0 is straight down, -75 almost along the ground. Icon follows: cube = go 3D, map = back to 2D.
+        public void JohanZetHoek(double pitch)
+        {
+            pitch = Math.Max(-70, Math.Min(0, pitch));
+            if (pitch > -4) pitch = 0;
+            camera.FollowDirectionHint = true;
+            camera.PitchInDegrees = pitch;
+            if (btnJ3D != null) btnJ3D.Image = JohanSkin.Icon(pitch > -20 ? "cube_licht_64" : "map-2_licht_64", 28);
+            SetZoom();
+        }
+
+        public bool JohanSchermActief => isDriverMode && !isDriverUnlocked;
+        public void JohanZoomStap(bool dichterbij) { if (dichterbij) camera.ZoomInSmallStep(); else camera.ZoomOutSmallStep(); SetZoom(); }
+
+        // Tilt by dragging on the map: two fingers on a touch screen (WM_GESTURE pan with a finger distance),
+        // or a plain mouse drag on a laptop. A pinch zooms. Taps keep working as before.
+        private JohanGestureWindow johanGest;
+        private int johanDragY = -1;
+        private bool johanDragging;
+        private void JohanGestures()
+        {
+            if (johanGest != null) return;
+            johanGest = new JohanGestureWindow(this);
+            if (oglMain.IsHandleCreated) johanGest.AssignHandle(oglMain.Handle);
+            oglMain.HandleCreated += (s, e) => johanGest.AssignHandle(oglMain.Handle);
+            oglMain.HandleDestroyed += (s, e) => johanGest.ReleaseHandle();
+            oglMain.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { johanDragY = e.Y; johanDragging = false; } };
+            oglMain.MouseUp += (s, e) => johanDragY = -1;
+            oglMain.MouseMove += (s, e) =>
+            {
+                if (e.Button != MouseButtons.Left || johanDragY < 0 || !JohanSchermActief) return;
+                int dy = e.Y - johanDragY;
+                if (!johanDragging && Math.Abs(dy) < 12) return;
+                johanDragging = true;
+                JohanZetHoek(camera.PitchInDegrees + dy * 0.25);   // drag up = tilt further
+                johanDragY = e.Y;
+            };
         }
 
         // Aerial photo: off = keep the loaded map aside; on = restore it, load it from the field folder,
@@ -513,9 +558,9 @@ namespace AgOpenGPS
             btnJVerschuif.Enabled = isJobStarted && trk.idx > -1;
 
             bool hasHeadland = isJobStarted && bnd.bndList.Count > 0 && bnd.bndList[0].hdLine.Count > 0;
-            btnJKopakker.Enabled = hasHeadland || geenGrens;
-            string kopTekst = geenGrens ? "Grens rijden" : !hasHeadland ? "Geen kopakker" : bnd.isHeadlandOn ? "Kopakker aan" : "Kopakker uit";
-            if (btnJKopakker.Text != kopTekst) { btnJKopakker.Text = kopTekst; btnJKopakker.Image = JohanSkin.Icon(geenGrens ? "polygon_licht_64" : "box-margin_licht_64", 32); }
+            btnJKopakker.Enabled = isJobStarted;
+            string kopTekst = geenGrens ? "Grens rijden" : !hasHeadland ? "Kopakker instellen" : bnd.isHeadlandOn ? "Kopakker aan" : "Kopakker uit";
+            if (btnJKopakker.Text != kopTekst) { btnJKopakker.Text = kopTekst; btnJKopakker.Image = JohanSkin.Icon(geenGrens ? "polygon_licht_64" : "kopakker_licht_64", 32); }
             btnJKopakker.BackColor = hasHeadland && bnd.isHeadlandOn ? JohanTheme.Green : JohanTheme.Panel;
 
             bool canSteer = isJobStarted && (trk.idx > -1 || ct.isContourBtnOn);

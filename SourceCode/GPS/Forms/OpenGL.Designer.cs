@@ -109,6 +109,14 @@ namespace AgOpenGPS
 
                     worldGrid.DrawFieldSurface(fieldColor, camera.ZoomValue, isTextureOn);
 
+                    // Johan: striped ground and a lighter field inside the boundary (not over an aerial photo)
+                    JohanLook.ThreeD = JohanLook.On && camera.PitchInDegrees < -20;
+                    if (JohanLook.On && !worldGrid.HasBingMap)
+                    {
+                        JohanLook.DrawStripes(worldGrid.eastingMin, worldGrid.eastingMax, worldGrid.northingMin, worldGrid.northingMax, fieldColor, camera.ZoomValue);
+                        if (isJobStarted && bnd.bndList.Count > 0) JohanLook.DrawFieldFill(bnd.bndList, fieldColor);
+                    }
+
                     if (isGridOn) worldGrid.DrawWorldGrid(JohanLook.On ? JohanLook.Grid : worldGridColor);
 
                     if (isDrawPolygons) GL.PolygonMode(MaterialFace.Front, PolygonMode.Line);

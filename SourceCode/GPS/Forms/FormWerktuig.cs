@@ -60,11 +60,23 @@ namespace AgOpenGPS
                 {
                     string name = Path.GetFileNameWithoutExtension(f);
                     bool selected = name == RegistrySettings.toolProfileName;
+                    // one row: the tool button and a pencil to edit it
+                    var rij = new Panel { Size = new Size(listW - 24, 72), Margin = new Padding(0, 0, 0, 10), BackColor = JohanTheme.Bg };
+                    var potlood = new JohanRoundButton
+                    {
+                        Bounds = new Rectangle(listW - 24 - 72, 0, 72, 72),
+                        BackColor = JohanTheme.Panel,
+                        FlatStyle = FlatStyle.Flat,
+                        Image = JohanSkin.Icon("pencil_licht_64", 30),
+                        ImageAlign = ContentAlignment.MiddleCenter,
+                        Tag = f
+                    };
+                    potlood.FlatAppearance.BorderSize = 0;
+                    potlood.Click += (s, e) => Bewerk((string)((Button)s).Tag);
                     var b = new JohanRoundButton
                     {
                         Text = name + "      " + Breedte(f, selected ? mf.tool.width : double.NaN) + (selected ? "   (nu achter de trekker)" : ""),
-                        Size = new Size(listW - 24, 72),
-                        Margin = new Padding(0, 0, 0, 10),
+                        Bounds = new Rectangle(0, 0, listW - 24 - 72 - 10, 72),
                         BackColor = selected ? (JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95)) : JohanTheme.Panel,
                         ForeColor = JohanTheme.Text,
                         FlatStyle = FlatStyle.Flat,
@@ -76,7 +88,9 @@ namespace AgOpenGPS
                     b.FlatAppearance.BorderSize = selected ? 2 : 0;
                     b.FlatAppearance.BorderColor = JohanTheme.Green;
                     b.Click += (s, e) => { LoadTool(mf, (string)((Button)s).Tag); Close(); };
-                    lijst.Controls.Add(b);
+                    rij.Controls.Add(b);
+                    rij.Controls.Add(potlood);
+                    lijst.Controls.Add(rij);
                 }
             }
 
@@ -133,22 +147,40 @@ namespace AgOpenGPS
             Close();
         }
 
+        // Pencil: the driver's few settings of this tool; the list is rebuilt afterwards
+        private void Bewerk(string file)
+        {
+            string name = Path.GetFileNameWithoutExtension(file);
+            bool current = name == RegistrySettings.toolProfileName;
+            double width = current ? mf.tool.width : Lees(file, "setVehicle_toolWidth", 3.0);
+            double overlap = current ? mf.tool.overlap : Lees(file, "setVehicle_toolOverlap", 0.0);
+            double offset = current ? mf.tool.offset : Lees(file, "setVehicle_toolOffset", 0.0);
+            int secties = current ? mf.tool.numOfSections : (int)Lees(file, "setVehicle_numSections", 1);
+            using (var f = new FormWerktuigBewerken(mf, name, width, overlap, offset, secties))
+            {
+                if (f.ShowDialog(this) == DialogResult.OK) Close();
+            }
+        }
+
         // Working width straight from the profile file, so every tool in the list shows it
         private static string Breedte(string file, double loadedWidth)
         {
             if (!double.IsNaN(loadedWidth)) return loadedWidth.ToString("0.0") + " m";
+            double w = Lees(file, "setVehicle_toolWidth", double.NaN);
+            return double.IsNaN(w) ? "" : w.ToString("0.0") + " m";
+        }
+
+        private static double Lees(string file, string setting, double fallback)
+        {
             try
             {
                 var doc = System.Xml.Linq.XDocument.Load(file);
                 foreach (var e in doc.Descendants("setting"))
-                    if ((string)e.Attribute("name") == "setVehicle_toolWidth")
-                    {
-                        double w = double.Parse(e.Element("value").Value, System.Globalization.CultureInfo.InvariantCulture);
-                        return w.ToString("0.0") + " m";
-                    }
+                    if ((string)e.Attribute("name") == setting)
+                        return double.Parse(e.Element("value").Value, System.Globalization.CultureInfo.InvariantCulture);
             }
             catch { }
-            return "";
+            return fallback;
         }
 
         // Same sequence as FormLoadVehicleTool, tool only. Returns true when switched.

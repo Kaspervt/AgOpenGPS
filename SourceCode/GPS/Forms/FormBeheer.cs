@@ -147,6 +147,22 @@ namespace AgOpenGPS
             terug.FlatAppearance.BorderSize = 0;
             terug.Click += (s, e) => Close();
             Controls.Add(terug);
+
+            // the only way out of the program in the Johan screen (the title bar is hidden)
+            var afsluiten = new JohanRoundButton
+            {
+                Text = "Afsluiten",
+                Image = JohanSkin.Icon("power_licht_64", 28),
+                TextImageRelation = TextImageRelation.ImageBeforeText,
+                Bounds = new Rectangle(w - x - 240, h - 96, 240, 64),
+                BackColor = Color.FromArgb(220, 38, 38),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = JohanTheme.Font(14F, FontStyle.Bold)
+            };
+            afsluiten.FlatAppearance.BorderSize = 0;
+            afsluiten.Click += (s, e) => { using (var f = new FormAfsluiten(mf)) f.ShowDialog(this); if (mf.johanAfsluitKeuze >= 0) Close(); };
+            Controls.Add(afsluiten);
         }
 
         private void UpdateStatus()

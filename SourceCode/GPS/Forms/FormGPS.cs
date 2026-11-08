@@ -322,7 +322,8 @@ namespace AgOpenGPS
             JohanTheme.Init(Settings.Default.setDisplay_isJohanLight);
             JohanTheme.WriteLightToRegistry(Settings.Default.setDisplay_isJohanLight);   // AgIO follows the same choice
             JohanTheme.IsOwnForm = f => f is FormStart || f is FormPerceel || f is FormWerktuig
-                                        || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif;
+                                        || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif
+                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten;
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {
@@ -774,6 +775,7 @@ namespace AgOpenGPS
                         catch (Exception ex) { Log.EventWriter("Start screen failed: " + ex.Message); }
                     } while (johanReopenStart);   // theme switched on the start screen: show it again
                     if (johanRestartPending) JohanRestart();
+                    JohanAfsluitenUitvoeren();
                 }));
             }
         }
@@ -818,8 +820,9 @@ namespace AgOpenGPS
                 return;
             }
 
-            // Get user choice for shutdown behavior (a Johan restart never asks)
-            int choice = johanRestartPending ? 0 : SaveOrNot();
+            // Get user choice for shutdown behavior (a Johan restart never asks, the Johan screen asked already)
+            int choice = johanRestartPending ? 0 : johanAfsluitKeuze >= 0 ? johanAfsluitKeuze : SaveOrNot();
+            johanAfsluitKeuze = -1;
             if (choice == 1)
             {
                 // User cancelled shutdown
@@ -1345,6 +1348,7 @@ namespace AgOpenGPS
         public void JobClose()
         {
             RequestPatchVboReset();
+            JohanLook.ResetFieldFill();
             recPath.resumeState = 0;
             btnResumePath.Image = Properties.Resources.pathResumeStart;
             recPath.currentPositonIndex = 0;

@@ -126,6 +126,23 @@ namespace AgOpenGPS
                 Close();
             };
             Controls.Add(btnThema);
+
+            // off switch next to the theme button; the question is asked first, the closing happens in FormGPS
+            var btnUit = new JohanRoundButton
+            {
+                Bounds = new Rectangle(btnThema.Left - 8 - 44, y - 8, 44, 44),
+                BackColor = panel,
+                FlatStyle = FlatStyle.Flat,
+                Image = JohanSkin.Icon("power_licht_64", 24),
+                ImageAlign = ContentAlignment.MiddleCenter
+            };
+            btnUit.FlatAppearance.BorderSize = 0;
+            btnUit.Click += (s, e) =>
+            {
+                using (var f = new FormAfsluiten(mf)) f.ShowDialog(this);
+                if (mf.johanAfsluitKeuze >= 0) Close();
+            };
+            Controls.Add(btnUit);
             y += 40;
 
             string[] names = { "GPS", "RTK-correcties", "Stuurprint", "Trekker" };

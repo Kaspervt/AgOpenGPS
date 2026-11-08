@@ -268,7 +268,7 @@ namespace AgOpenGPS
                 trailingTool -= trailingToolToPivotLength;
             }
 
-            if (mf.isJobStarted)
+            if (mf.isJobStarted && !JohanLook.On)
             {
                 //look ahead lines
                 GL.LineWidth(3);
@@ -304,7 +304,36 @@ namespace AgOpenGPS
             //TooDoo
             //hite = 0.2;
 
-            for (int j = 0; j < numOfSections; j++)
+            // Johan: the implement as one bar behind the tractor with the sections on it (the canvas look)
+            if (JohanLook.On)
+            {
+                double t = Math.Max(0.6, hite * 0.55);
+                double y1 = trailingTool + t * 0.15, y0 = trailingTool - t * 0.85;
+                GLW.SetColor(JohanLook.ToolBar);
+                GL.Begin(PrimitiveType.Quads);
+                GL.Vertex3(farLeftPosition, y0, 0); GL.Vertex3(farRightPosition, y0, 0); GL.Vertex3(farRightPosition, y1, 0); GL.Vertex3(farLeftPosition, y1, 0);
+                GL.End();
+                GLW.SetLineWidth(2.0f);
+                GLW.SetColor(JohanLook.VehicleEdge);
+                GL.Begin(PrimitiveType.LineLoop);
+                GL.Vertex3(farLeftPosition, y0, 0); GL.Vertex3(farRightPosition, y0, 0); GL.Vertex3(farRightPosition, y1, 0); GL.Vertex3(farLeftPosition, y1, 0);
+                GL.End();
+                double m = t * 0.2;
+                GL.Begin(PrimitiveType.Quads);
+                for (int j = 0; j < numOfSections; j++)
+                {
+                    if (mf.section[j].isSectionOn) GLW.SetColor(mf.section[j].isMappingOn ? JohanLook.SectionOn : JohanLook.SectionWait);
+                    else GLW.SetColor(JohanLook.SectionOff);
+                    double g = Math.Min(0.12, (mf.section[j].positionRight - mf.section[j].positionLeft) * 0.06);
+                    GL.Vertex3(mf.section[j].positionLeft + g, y0 + m, 0.001);
+                    GL.Vertex3(mf.section[j].positionRight - g, y0 + m, 0.001);
+                    GL.Vertex3(mf.section[j].positionRight - g, y1 - m, 0.001);
+                    GL.Vertex3(mf.section[j].positionLeft + g, y1 - m, 0.001);
+                }
+                GL.End();
+                GLW.SetLineWidth(1.0f);
+            }
+            for (int j = 0; j < (JohanLook.On ? 0 : numOfSections); j++)
             {
                 //if section is on, green, if off, red color
                 if (JohanLook.On)
