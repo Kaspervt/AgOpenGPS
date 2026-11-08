@@ -376,6 +376,7 @@ namespace AgOpenGPS
         public void JohanKiesLijn(int idx)
         {
             if (!isJobStarted || idx < 0 || idx >= trk.gArr.Count || !trk.gArr[idx].isVisible) return;
+            if (idx == trk.idx) return;   // tapping the active line must not switch autosteer off
             trk.isAutoTrack = false;
             btnAutoTrack.Image = Resources.AutoTrackOff;
             trk.idx = idx;
@@ -385,6 +386,12 @@ namespace AgOpenGPS
             if (isBtnAutoSteerOn) { btnAutoSteer.PerformClick(); TimedMessageBox(2000, "Autosturen uit", "Lijn gewisseld"); }
             if (yt.isYouTurnBtnOn) btnAutoYouTurn.PerformClick();
             lblNumCu.Text = (trk.idx + 1).ToString() + "/" + trk.gArr.Count.ToString();
+
+            // same as btnCycleLines_Click: force a rebuild of the guidance line
+            twoSecondCounter = 100;
+
+            ABLine.isABValid = false;
+            curve.isCurveValid = false;
         }
 
         private void JohanAndereLijn()

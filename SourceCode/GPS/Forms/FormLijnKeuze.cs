@@ -38,7 +38,7 @@ namespace AgOpenGPS
 
             tick.Tick += (s, e) => { Highlight(); if (++stil >= 16) Close(); };   // 8 s without a tap
             Load += (s, e) => { Highlight(); tick.Start(); };
-            FormClosed += (s, e) => tick.Stop();
+            FormClosed += (s, e) => { tick.Stop(); tick.Dispose(); };
         }
 
         private void BuildLayout()
@@ -63,6 +63,7 @@ namespace AgOpenGPS
                     TextAlign = ContentAlignment.MiddleCenter
                 };
                 b.FlatAppearance.BorderSize = 0;
+                b.MouseDown += (s, e) => stil = 0;   // keep the bar open while the finger is on it
                 b.Click += (s, e) => { mf.JohanKiesLijn(t); stil = 0; Highlight(); mf.Activate(); };
                 Controls.Add(b);
                 knoppen.Add(b);
@@ -80,6 +81,7 @@ namespace AgOpenGPS
                 TextImageRelation = TextImageRelation.ImageBeforeText
             };
             klaar.FlatAppearance.BorderSize = 0;
+            klaar.MouseDown += (s, e) => stil = 0;
             klaar.Click += (s, e) => Close();
             Controls.Add(klaar);
         }

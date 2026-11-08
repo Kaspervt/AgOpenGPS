@@ -130,8 +130,8 @@ namespace AgOpenGPS
             Knop(c3, new Rectangle(S(24) + bw + S(12), by, bw, bh), "Autostuur", "steering-wheel_licht_64", () => mf.BeheerOpenSteer());
             Knop(c3, new Rectangle(S(24), by + bh + S(12), bw, bh), "AgIO", "plug_licht_64", () => mf.BeheerOpenAgIO());
             Knop(c3, new Rectangle(S(24) + bw + S(12), by + bh + S(12), bw, bh), "Logboek", "list_licht_64", () => mf.BeheerOpenLog());
-            Knop(c3, new Rectangle(S(24), by + 2 * (bh + S(12)), bw, bh), "Originele indeling tonen", "layout-sidebar-right_licht_64", () => { mf.BeheerShowOriginal(); Close(); });
-            Knop(c3, new Rectangle(S(24) + bw + S(12), by + 2 * (bh + S(12)), bw, bh), "Perceel importeren (KML, ISO-XML)", "file-import_licht_64", () => { Close(); mf.BeginInvoke(new Action(() => mf.JohanImportMenu())); });
+            // (the "original layout" button is gone on Kasper's request, 8-11; the long press on the menu still works)
+            Knop(c3, new Rectangle(S(24), by + 2 * (bh + S(12)), 2 * bw + S(12), bh), "Perceel importeren (KML, ISO-XML)", "file-import_licht_64", () => { Close(); mf.BeginInvoke(new Action(() => mf.JohanImportMenu())); });
 
             // Status
             var c4 = Card(new Rectangle(x + cardW + gap, gridTop + cardH + gap, cardW, cardH), "Status");

@@ -1754,7 +1754,7 @@ namespace AgOpenGPS
             form.Show(this);
             // Johan screen: below the top bar, so the field and tool buttons stay reachable
             if (JohanSchermActief && panelJohanTop != null)
-                form.Location = new Point(Left + JohanTheme.S(16), Top + panelJohanTop.Bottom + JohanTheme.S(16));
+                form.Location = PointToScreen(new Point(JohanTheme.S(16), panelJohanTop.Bottom + JohanTheme.S(16)));
             this.Activate();
         }
 
