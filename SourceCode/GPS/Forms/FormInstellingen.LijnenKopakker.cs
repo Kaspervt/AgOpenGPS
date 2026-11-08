@@ -30,6 +30,16 @@ namespace AgOpenGPS
                 v => { Settings.Default.setDisplay_johanKopakkerGangen = (int)Math.Round(v); Toepassen(); },
                 1, 10, 1, 0, "Wat Kopakker instellen voorstelt bij een perceel zonder kopakker");
 
+            // Beep when the tool crosses into the headland, optionally some metres early
+            RijAanUit(k, "Piep bij de kopakker",
+                () => Settings.Default.setDisplay_johanKopakkerPiep,
+                aan => { Settings.Default.setDisplay_johanKopakkerPiep = aan; Toepassen(); },
+                "Eén toon zodra het werktuig de kopakkerlijn overrijdt");
+            RijGetal(k, "Piep zoveel meter eerder", "m",
+                () => Settings.Default.setDisplay_johanKopakkerPiepAfstand,
+                v => { Settings.Default.setDisplay_johanKopakkerPiepAfstand = v; Toepassen(); },
+                0, 30, 0.5, 1, "0 = precies als het werktuig de lijn raakt; meer = eerder, gerekend vanaf het werktuig");
+
             // Sections off on the headland: the saved setting plus the live flag, as FormKopakker does
             RijAanUit(k, "Secties uit op de kopakker",
                 () => ToolSettings.Default.setHeadland_isSectionControlled,

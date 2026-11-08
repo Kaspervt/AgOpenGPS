@@ -980,6 +980,7 @@ namespace AgOpenGPS
 
             //determine where the tool is wrt to headland
             if (bnd.isHeadlandOn) bnd.WhereAreToolCorners();
+            JohanKopakkerPiep();   // Johan fork: one tone when the tool reaches the headland
 
             //set the look ahead for hyd Lift in pixels per second
             vehicle.hydLiftLookAheadDistanceLeft = tool.farLeftSpeed * vehicle.hydLiftLookAheadTime * 10;

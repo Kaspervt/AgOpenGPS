@@ -205,6 +205,29 @@ namespace AgOpenGPS
             return binnen * 2 > n;
         }
 
+        // ---- headland beep: one tone when the tool (or a point so many metres ahead of it) crosses the headland line
+        private bool johanInKop, johanKopBekend;
+        public void JohanKopakkerPiep()
+        {
+            if (!Settings.Default.setDisplay_johanKopakkerPiep || !isJobStarted || !bnd.isHeadlandOn
+                || bnd.bndList.Count == 0 || bnd.bndList[0].hdLine.Count < 3)
+            {
+                johanKopBekend = false;
+                return;
+            }
+            double vooraf = Settings.Default.setDisplay_johanKopakkerPiepAfstand;
+            var p = new vec2(toolPos.easting + Math.Sin(toolPos.heading) * vooraf, toolPos.northing + Math.Cos(toolPos.heading) * vooraf);
+            bool inKop = !bnd.IsPointInsideHeadArea(p);   // inside the headland polygon = the working area
+            if (!johanKopBekend) { johanInKop = inKop; johanKopBekend = true; return; }
+            if (inKop == johanInKop) return;
+            johanInKop = inKop;
+            if (inKop && avgSpeed > 0.3)
+            {
+                try { sounds.sndHeadland.Play(); } catch { }
+                Log.EventWriter("Johan: headland beep (" + vooraf.ToString("0.0") + " m ahead of the tool)");
+            }
+        }
+
         // ---- shutdown from Beheer or the start screen: our own question, then the normal AgOpenGPS close
         public int johanAfsluitKeuze = -1;   // 0 exit, 2 shut the computer down, -1 ask the AgOpenGPS way
         public void JohanAfsluiten(bool computerUit)
