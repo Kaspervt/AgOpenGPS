@@ -412,10 +412,10 @@ namespace AgOpenGPS
             pitch = Math.Max(-70, Math.Min(0, pitch));
             if (pitch > -4) pitch = 0;
             // 3D always follows the driving direction; 2D can be pinned north up (compass button)
-            camera.FollowDirectionHint = pitch < -4 || !Settings.Default.setDisplay_johanNoordBoven;
+            camera.FollowDirectionHint = pitch <= -20 || !Settings.Default.setDisplay_johanNoordBoven;
             camera.PitchInDegrees = pitch;
             if (btnJ3D != null) btnJ3D.Image = JohanSkin.Icon(pitch > -20 ? "cube_licht_64" : "map-2_licht_64", 28);
-            if (btnJNoord != null) btnJNoord.Visible = JohanSchermActief && pitch > -4;
+            if (btnJNoord != null) btnJNoord.Visible = JohanSchermActief && pitch > -20;
             SetZoom();
         }
 
@@ -604,8 +604,8 @@ namespace AgOpenGPS
                 btnJZoomUit.Visible = true;
                 btnJ3D.Visible = true;
                 btnJMeet.Visible = true;
-                btnJNoord.Visible = camera.PitchInDegrees > -4;
-                camera.FollowDirectionHint = camera.PitchInDegrees < -4 || !Settings.Default.setDisplay_johanNoordBoven;
+                btnJNoord.Visible = camera.PitchInDegrees > -20;
+                camera.FollowDirectionHint = camera.PitchInDegrees <= -20 || !Settings.Default.setDisplay_johanNoordBoven;
                 panelJohanTop.BringToFront();
                 panelJohanBottom.BringToFront();
                 lblJBewerkt.BringToFront();

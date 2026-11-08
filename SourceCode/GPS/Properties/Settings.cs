@@ -73,6 +73,7 @@ namespace AgOpenGPS.Properties
         public int setDisplay_johanFotoIndex = 0;  // which start photo comes next
         public int setDisplay_johanCode = 2468;    // code for the protected chapters of the settings page
         public bool setDisplay_johanNoordBoven = false;   // 2D map pinned north up (compass button)
+        public int setDisplay_johanKopakkerGangen = 2;    // what the headland bar proposes: this many working passes
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

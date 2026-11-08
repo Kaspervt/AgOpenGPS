@@ -43,7 +43,8 @@ namespace AgOpenGPS
             Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
 
             breedte = mf.JohanKopakkerBreedte();
-            if (breedte <= 0) breedte = Math.Round(Math.Max(1.0, mf.tool.width - mf.tool.overlap) * 2) / 2;
+            // no headland yet: the default number of working passes from the settings page
+            if (breedte <= 0) breedte = Math.Round(Math.Max(0.5, mf.tool.width - mf.tool.overlap) * Math.Max(1, Settings.Default.setDisplay_johanKopakkerGangen) * 2) / 2;
             BuildLayout();
 
             tick.Tick += (s, e) => UpdateLabel();
