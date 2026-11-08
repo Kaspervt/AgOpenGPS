@@ -28,6 +28,12 @@ namespace AgOpenGPS
             isFirstKey = true;
         }
 
+        // Johan fork: the same keypad with a title that says what is being entered (and its unit)
+        public FormNumeric(double _min, double _max, double currentValue, string title) : this(_min, _max, currentValue)
+        {
+            if (!string.IsNullOrEmpty(title)) this.Text = title;
+        }
+
         private void FormNumeric_Load(object sender, EventArgs e)
         {
             lblMax.Text = max.ToString();

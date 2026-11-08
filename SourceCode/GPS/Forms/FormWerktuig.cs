@@ -125,40 +125,20 @@ namespace AgOpenGPS
             Controls.Add(plus);
         }
 
+        // New tool: the full page (name, attachment, width, ...), starting from the current tool
         private void NieuwWerktuig()
         {
-            string name = AgOpenGPS.Forms.FormInputDialog.ShowInput("Nieuw werktuig", "Naam van het werktuig", mf);
-            if (string.IsNullOrWhiteSpace(name)) return;
-            name = name.Trim();
-            string path = Path.Combine(RegistrySettings.toolsDirectory, name + ".xml");
-            if (File.Exists(path)) { mf.TimedMessageBox(2500, "Werktuig", "Er is al een werktuig met die naam"); return; }
-
-            double width = mf.tool.width;
-            using (var num = new FormNumeric(0.5, 60, width))
+            using (var f = new FormWerktuigBewerken(mf, null, null))
             {
-                if (num.ShowDialog(this) == DialogResult.OK) width = num.ReturnValue;
+                if (f.ShowDialog(this) == DialogResult.OK) Close();
             }
-
-            // start from the current tool, set the width, save under the new name and load it
-            double oldWidth = ToolSettings.Default.setVehicle_toolWidth;
-            ToolSettings.Default.setVehicle_toolWidth = width;
-            XmlSettingsHandler.SaveXMLFile(path, ToolSettings.Default);
-            ToolSettings.Default.setVehicle_toolWidth = oldWidth;
-            Log.EventWriter("Tool picker: new tool " + name + " (" + width.ToString("0.0") + " m)");
-            LoadTool(mf, name);
-            Close();
         }
 
-        // Pencil: the driver's few settings of this tool; the list is rebuilt afterwards
+        // Pencil: the same page for an existing tool; the list is rebuilt afterwards
         private void Bewerk(string file)
         {
             string name = Path.GetFileNameWithoutExtension(file);
-            bool current = name == RegistrySettings.toolProfileName;
-            double width = current ? mf.tool.width : Lees(file, "setVehicle_toolWidth", 3.0);
-            double overlap = current ? mf.tool.overlap : Lees(file, "setVehicle_toolOverlap", 0.0);
-            double offset = current ? mf.tool.offset : Lees(file, "setVehicle_toolOffset", 0.0);
-            int secties = current ? mf.tool.numOfSections : (int)Lees(file, "setVehicle_numSections", 1);
-            using (var f = new FormWerktuigBewerken(mf, name, width, overlap, offset, secties))
+            using (var f = new FormWerktuigBewerken(mf, name, file))
             {
                 if (f.ShowDialog(this) == DialogResult.OK) Close();
             }
@@ -172,7 +152,7 @@ namespace AgOpenGPS
             return double.IsNaN(w) ? "" : w.ToString("0.0") + " m";
         }
 
-        private static double Lees(string file, string setting, double fallback)
+        internal static double Lees(string file, string setting, double fallback)
         {
             try
             {
@@ -180,6 +160,19 @@ namespace AgOpenGPS
                 foreach (var e in doc.Descendants("setting"))
                     if ((string)e.Attribute("name") == setting)
                         return double.Parse(e.Element("value").Value, System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch { }
+            return fallback;
+        }
+
+        internal static bool LeesBool(string file, string setting, bool fallback)
+        {
+            try
+            {
+                var doc = System.Xml.Linq.XDocument.Load(file);
+                foreach (var e in doc.Descendants("setting"))
+                    if ((string)e.Attribute("name") == setting)
+                        return bool.Parse(e.Element("value").Value.Trim());
             }
             catch { }
             return fallback;

@@ -323,7 +323,7 @@ namespace AgOpenGPS
             JohanTheme.WriteLightToRegistry(Settings.Default.setDisplay_isJohanLight);   // AgIO follows the same choice
             JohanTheme.IsOwnForm = f => f is FormStart || f is FormPerceel || f is FormWerktuig
                                         || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif
-                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten || f is FormLijnKeuze;
+                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten || f is FormLijnKeuze || f is FormGetal;
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {
