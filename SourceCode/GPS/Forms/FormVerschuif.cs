@@ -12,7 +12,8 @@ namespace AgOpenGPS
         private readonly FormGPS mf;
         private readonly Timer tick = new Timer { Interval = 500 };
         private Label lblOffset;
-        private double stap;   // metres
+        private double stap;   // metres, the configured snap distance (coarse step)
+        private double fijn;   // metres, the small step (5 cm, or 1 cm when snap is already 5 cm)
 
         public FormVerschuif(FormGPS formGPS)
         {
@@ -31,7 +32,10 @@ namespace AgOpenGPS
             Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - 132 - 12 - h, w, h);
 
             stap = ToolSettings.Default.setAS_snapDistance * 0.01;
-            if (stap <= 0) stap = 0.02;
+            if (stap <= 0) stap = 0.20;
+            // a small step next to the configured one: sometimes you only want a nudge
+            fijn = 0.05;
+            if (stap <= 0.05) { fijn = stap; stap = Math.Max(stap * 4, 0.20); }
             BuildLayout();
 
             tick.Tick += (s, e) => UpdateLabel();
@@ -62,30 +66,34 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int cm = (int)Math.Round(stap * 100);
+            string grof = (int)Math.Round(stap * 100) + " cm";
+            string klein = (int)Math.Round(fijn * 100) + " cm";
             int x = 14, gap = 10;
             double half = (mf.tool.width - mf.tool.overlap) * 0.5;
 
-            Knop(x, 140, "½ werktuig", "arrow-big-left_licht_64", () => mf.trk.NudgeTrack(-half)); x += 140 + gap;
-            Knop(x, 110, cm + " cm", "chevron-left_licht_64", () => mf.trk.NudgeTrack(-stap)); x += 110 + gap;
+            // from the outside in: half a tool, coarse step, fine step, offset, fine, coarse, half
+            Knop(x, 124, "½ werktuig", "arrow-big-left_licht_64", () => mf.trk.NudgeTrack(-half)); x += 124 + gap;
+            Knop(x, 96, grof, "chevrons-left_licht_64", () => mf.trk.NudgeTrack(-stap)); x += 96 + gap;
+            Knop(x, 84, klein, "chevron-left_licht_64", () => mf.trk.NudgeTrack(-fijn)); x += 84 + gap;
 
             lblOffset = new Label
             {
-                Bounds = new Rectangle(x, 14, 160, Height - 28),
+                Bounds = new Rectangle(x, 14, 130, Height - 28),
                 Font = JohanTheme.Font(18F, FontStyle.Bold),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent
             };
-            Controls.Add(lblOffset); x += 160 + gap;
+            Controls.Add(lblOffset); x += 130 + gap;
 
-            Knop(x, 110, cm + " cm", "chevron-right_licht_64", () => mf.trk.NudgeTrack(stap)); x += 110 + gap;
-            Knop(x, 140, "½ werktuig", "arrow-big-right_licht_64", () => mf.trk.NudgeTrack(half)); x += 140 + 2 * gap;
+            Knop(x, 84, klein, "chevron-right_licht_64", () => mf.trk.NudgeTrack(fijn)); x += 84 + gap;
+            Knop(x, 96, grof, "chevrons-right_licht_64", () => mf.trk.NudgeTrack(stap)); x += 96 + gap;
+            Knop(x, 124, "½ werktuig", "arrow-big-right_licht_64", () => mf.trk.NudgeTrack(half)); x += 124 + 2 * gap;
 
-            Knop(x, 150, "Naar trekker", "focus-2_licht_64", () => mf.trk.SnapToPivot()); x += 150 + gap;
-            Knop(x, 100, "Op nul", "refresh_licht_64", () => mf.trk.NudgeDistanceReset()); x += 100 + gap;
+            Knop(x, 136, "Naar trekker", "focus-2_licht_64", () => mf.trk.SnapToPivot()); x += 136 + gap;
+            Knop(x, 92, "Op nul", "refresh_licht_64", () => mf.trk.NudgeDistanceReset()); x += 92 + gap;
 
-            var klaar = Knop(Width - 14 - 110, 110, "Klaar", "check_licht_64", () => Close());
+            var klaar = Knop(Width - 14 - 96, 96, "Klaar", "check_licht_64", () => Close());
             klaar.BackColor = JohanTheme.Green;
             klaar.ForeColor = Color.White;
         }

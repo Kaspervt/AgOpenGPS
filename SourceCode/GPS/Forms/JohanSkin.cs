@@ -209,20 +209,33 @@ namespace AgOpenGPS
         public static Bitmap Mono(Image src, Color ink)
         {
             var bmp = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            using (var tmp = new Bitmap(src))
+            using (var tmp = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             {
-                for (int y = 0; y < tmp.Height; y++)
-                    for (int x = 0; x < tmp.Width; x++)
+                using (var g = Graphics.FromImage(tmp)) g.DrawImageUnscaled(src, 0, 0);
+                var rect = new Rectangle(0, 0, tmp.Width, tmp.Height);
+                var din = tmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                var dout = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                try
+                {
+                    int n = Math.Abs(din.Stride) * tmp.Height;
+                    var px = new byte[n];
+                    System.Runtime.InteropServices.Marshal.Copy(din.Scan0, px, 0, n);
+                    var outPx = new byte[n];
+                    for (int i = 0; i < n; i += 4)
                     {
-                        Color c = tmp.GetPixel(x, y);
-                        if (c.A < 8) continue;
-                        double lum = (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255.0;
-                        double sat = (Math.Max(c.R, Math.Max(c.G, c.B)) - Math.Min(c.R, Math.Min(c.G, c.B))) / 255.0;
+                        int b = px[i], gch = px[i + 1], r = px[i + 2], a = px[i + 3];
+                        if (a < 8) continue;
+                        double lum = (0.299 * r + 0.587 * gch + 0.114 * b) / 255.0;
+                        double sat = (Math.Max(r, Math.Max(gch, b)) - Math.Min(r, Math.Min(gch, b))) / 255.0;
                         // dark or strongly coloured = ink, near-white = faint
                         double w = Math.Max(1.0 - lum, sat * 0.8);
-                        int a = (int)(c.A * (0.22 + 0.78 * Math.Min(1.0, w)));
-                        bmp.SetPixel(x, y, Color.FromArgb(a, ink));
+                        int na = (int)(a * (0.22 + 0.78 * Math.Min(1.0, w)));
+                        // premultiplied? no: Format32bppArgb is straight alpha
+                        outPx[i] = ink.B; outPx[i + 1] = ink.G; outPx[i + 2] = ink.R; outPx[i + 3] = (byte)na;
                     }
+                    System.Runtime.InteropServices.Marshal.Copy(outPx, 0, dout.Scan0, n);
+                }
+                finally { tmp.UnlockBits(din); bmp.UnlockBits(dout); }
             }
             return bmp;
         }
@@ -297,59 +310,74 @@ namespace AgOpenGPS
                 dir = iconDir;
             }
 
+            // names that are not images (strings, icons, textures we never touch) skip the lookup
+            private readonly HashSet<string> passThrough = new HashSet<string>();
+
             public override object GetObject(string name, CultureInfo culture)
             {
-                object original = base.GetObject(name, culture);
-                if (!(original is Image origImg)) return original;
+                // Hot path: upstream reads Resources.X inside timers and paint code, and every
+                // base.GetObject deserialises a fresh Bitmap. Answer from the cache first.
+                lock (cache)
+                {
+                    if (cache.TryGetValue(name, out Bitmap hit)) return hit;
+                    if (passThrough.Contains(name)) return base.GetObject(name, culture);
+                }
 
+                object original = base.GetObject(name, culture);
+                if (!(original is Image origImg))
+                {
+                    lock (cache) passThrough.Add(name);
+                    return original;
+                }
+
+                Bitmap result = null;
                 if (!map.TryGetValue(name, out string file))
                 {
                     // no hand-picked icon: keep textures and illustrations, restyle small button pictures
-                    if (KeepOriginal(name, origImg)) return original;
-                    lock (cache)
+                    if (KeepOriginal(name, origImg)) result = origImg as Bitmap ?? new Bitmap(origImg);
+                    else
                     {
-                        if (cache.TryGetValue(name, out Bitmap monoCached)) return monoCached;
-                        try
-                        {
-                            var mono = Mono(origImg, JohanTheme.Text);
-                            cache[name] = mono;
-                            return mono;
-                        }
-                        catch { return original; }
+                        try { result = Mono(origImg, JohanTheme.Text); }
+                        catch { result = origImg as Bitmap ?? new Bitmap(origImg); }
                     }
                 }
+                else
+                {
+                    string path = Path.Combine(dir, Resolve(file) + ".png");
+                    if (File.Exists(path))
+                    {
+                        var size = origImg.Size;
+                        try
+                        {
+                            using (var src = new Bitmap(path))
+                            {
+                                var bmp = new Bitmap(size.Width, size.Height);
+                                using (var g = Graphics.FromImage(bmp))
+                                {
+                                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                                    g.Clear(Color.Transparent);
+                                    // keep the icon square and centered inside non-square originals
+                                    int s = Math.Min(size.Width, size.Height);
+                                    g.DrawImage(src, (size.Width - s) / 2, (size.Height - s) / 2, s, s);
+                                }
+                                result = bmp;
+                            }
+                        }
+                        catch { result = null; }
+                    }
+                    if (result == null) result = origImg as Bitmap ?? new Bitmap(origImg);
+                }
+
+                // the deserialised original is not handed out, so free it
+                if (!ReferenceEquals(result, origImg)) origImg.Dispose();
 
                 lock (cache)
                 {
-                    if (cache.TryGetValue(name, out Bitmap cached)) return cached;
-
-                    string path = Path.Combine(dir, Resolve(file) + ".png");
-                    if (!File.Exists(path)) return original;
-
-                    var size = (original as Image)?.Size ?? new Size(64, 64);
-                    try
-                    {
-                        using (var src = new Bitmap(path))
-                        {
-                            var bmp = new Bitmap(size.Width, size.Height);
-                            using (var g = Graphics.FromImage(bmp))
-                            {
-                                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                                g.SmoothingMode = SmoothingMode.AntiAlias;
-                                g.Clear(Color.Transparent);
-                                // keep the icon square and centered inside non-square originals
-                                int s = Math.Min(size.Width, size.Height);
-                                g.DrawImage(src, (size.Width - s) / 2, (size.Height - s) / 2, s, s);
-                            }
-                            cache[name] = bmp;
-                            return bmp;
-                        }
-                    }
-                    catch
-                    {
-                        return original;
-                    }
+                    if (cache.TryGetValue(name, out Bitmap raced)) { if (!ReferenceEquals(raced, result)) result.Dispose(); return raced; }
+                    cache[name] = result;
                 }
+                return result;
             }
         }
     }

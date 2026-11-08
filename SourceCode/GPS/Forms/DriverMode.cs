@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using AgLibrary.Logging;
@@ -25,6 +26,7 @@ namespace AgOpenGPS
         private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto, btnJLuchtfoto, btnJThema;
         private Label lblJLijn, lblJRtk, lblJTrekker, lblJSpeed, lblJBewerkt;
         private Timer johanTick;
+        private Control[] johanSectionButtons;
         private bool johanLayoutBusy;
         private const int JohanTopH = 68, JohanBottomH = 132;
 
@@ -373,9 +375,16 @@ namespace AgOpenGPS
             lblJLijn.Text = lijn == "" ? "" : "Lijn:  " + lijn;
             lblJLijn.Visible = isJobStarted;
 
-            // upstream lines the section buttons up again after a field opens; keep them away
-            HideSections();
-            HideZones();
+            // upstream lines the section buttons up again after a field opens; keep them away.
+            // HideSections() walks the whole control tree 16 times, so look the buttons up once.
+            if (johanSectionButtons == null)
+            {
+                var lijst = new List<Control>();
+                for (int i = 1; i <= 16; i++) lijst.AddRange(Controls.Find("btnSection" + i + "Man", true));
+                for (int i = 1; i <= 8; i++) lijst.AddRange(Controls.Find("btnZone" + i, true));
+                johanSectionButtons = lijst.ToArray();
+            }
+            foreach (Control c in johanSectionButtons) if (c.Visible) c.Visible = false;
 
             btnJWerktuig.Text = RegistrySettings.toolProfileName + "   " + tool.width.ToString("0.0") + " m";
 

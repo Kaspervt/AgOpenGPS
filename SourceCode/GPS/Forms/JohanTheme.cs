@@ -89,9 +89,10 @@ namespace AgOpenGPS
             }
             catch (Exception ex) { Log.EventWriter("Johan theme: CBT hook failed: " + ex.Message); }
 
+            // No Application.Idle handler: that fires after every message (GPS data arrives
+            // ten times a second), the CBT hook already catches new windows. The timer is the net.
             Application.EnterThreadModal += (s, e) => Sweep();
-            Application.Idle += (s, e) => Sweep();
-            sweeper = new Timer { Interval = 150 };
+            sweeper = new Timer { Interval = 500 };
             sweeper.Tick += (s, e) => Sweep();
             sweeper.Start();
             Log.EventWriter("Johan theme installed" + (hook == IntPtr.Zero ? " (no hook)" : ""));
@@ -99,6 +100,9 @@ namespace AgOpenGPS
 
         private static void Sweep()
         {
+            // nothing new: no list, no work
+            try { if (Application.OpenForms.Count == themed.Count) return; }
+            catch { return; }
             var open = new List<Form>();
             try { foreach (Form f in Application.OpenForms) open.Add(f); }
             catch { return; }
