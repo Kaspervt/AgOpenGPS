@@ -213,7 +213,7 @@ namespace AgOpenGPS
             panelJohanBottom = new Panel { BackColor = JohanTheme.Bar, Visible = false };
 
             btnJAndereLijn = JohanButton("Andere lijn", "line_licht_64", 32, 12F, true);
-            btnJAndereLijn.Click += (s, e) => JohanAndereLijn();
+            btnJAndereLijn.Click += (s, e) => { if (isJobStarted && trk.gArr.Count == 0) JohanOpenLijn(); else JohanAndereLijn(); };
 
             btnJVerschuif = JohanButton("Lijn verschuiven", "arrows-horizontal_licht_64", 32, 12F, true);
             btnJVerschuif.Click += (s, e) =>
@@ -225,7 +225,7 @@ namespace AgOpenGPS
             };
 
             btnJKopakker = JohanButton("Kopakker", "box-margin_licht_64", 32, 12F, true);
-            btnJKopakker.Click += (s, e) => btnHeadlandOnOff_Click(btnHeadlandOnOff, EventArgs.Empty);
+            btnJKopakker.Click += (s, e) => { if (isJobStarted && bnd.bndList.Count == 0) JohanOpenGrens(); else btnHeadlandOnOff_Click(btnHeadlandOnOff, EventArgs.Empty); };
 
             btnJAuto = JohanButton("Autosturen uit", "steering-wheel_licht_64", 40, 18F, false);
             btnJAuto.BackColor = JohanTheme.Grey;
@@ -283,6 +283,20 @@ namespace AgOpenGPS
             map.Show(this);
         }
 
+
+        public void JohanOpenGrens()
+        {
+            if (!isJobStarted) { TimedMessageBox(1500, "Grens", "Eerst een perceel openen"); return; }
+            if (Application.OpenForms["FormGrens"] != null) return;
+            new FormGrens(this).Show(this);
+        }
+
+        public void JohanOpenLijn()
+        {
+            if (!isJobStarted) { TimedMessageBox(1500, "Lijn", "Eerst een perceel openen"); return; }
+            if (Application.OpenForms["FormLijn"] != null) return;
+            new FormLijn(this).Show(this);
+        }
 
         private void JohanAndereLijn()
         {
@@ -478,13 +492,17 @@ namespace AgOpenGPS
                 lblJBewerkt.Text = "Bewerkt " + (fd.workedAreaTotal / 10000.0).ToString("0.0") + " ha";
             lblJBewerkt.Visible = isJobStarted;
 
-            // bottom buttons
-            btnJAndereLijn.Enabled = isJobStarted && trk.gArr.Count > 0;
+            // bottom buttons: without lines or boundary the buttons become the makers
+            bool geenLijnen = isJobStarted && trk.gArr.Count == 0, geenGrens = isJobStarted && bnd.bndList.Count == 0;
+            btnJAndereLijn.Enabled = isJobStarted;
+            string lijnTekst = geenLijnen ? "Lijn maken" : "Andere lijn";
+            if (btnJAndereLijn.Text != lijnTekst) { btnJAndereLijn.Text = lijnTekst; btnJAndereLijn.Image = JohanSkin.Icon(geenLijnen ? "plus_licht_64" : "line_licht_64", 32); }
             btnJVerschuif.Enabled = isJobStarted && trk.idx > -1;
 
             bool hasHeadland = isJobStarted && bnd.bndList.Count > 0 && bnd.bndList[0].hdLine.Count > 0;
-            btnJKopakker.Enabled = hasHeadland;
-            btnJKopakker.Text = !hasHeadland ? "Geen kopakker" : bnd.isHeadlandOn ? "Kopakker aan" : "Kopakker uit";
+            btnJKopakker.Enabled = hasHeadland || geenGrens;
+            string kopTekst = geenGrens ? "Grens rijden" : !hasHeadland ? "Geen kopakker" : bnd.isHeadlandOn ? "Kopakker aan" : "Kopakker uit";
+            if (btnJKopakker.Text != kopTekst) { btnJKopakker.Text = kopTekst; btnJKopakker.Image = JohanSkin.Icon(geenGrens ? "polygon_licht_64" : "box-margin_licht_64", 32); }
             btnJKopakker.BackColor = hasHeadland && bnd.isHeadlandOn ? JohanTheme.Green : JohanTheme.Panel;
 
             bool canSteer = isJobStarted && (trk.idx > -1 || ct.isContourBtnOn);

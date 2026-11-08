@@ -107,6 +107,18 @@ namespace AgOpenGPS
             Row(c2, 70, "Tailscale aan (Kasper mag meekijken)", false, "Nog niet ingericht op deze tablet");
             Row(c2, 140, "Percelen synchroniseren met Lijnbeheer", false, "Nog niet ingericht; nu via ISO-XML-bestand");
 
+            // Simulator (only on a laptop without GPS): drive, stop, steer, so the field flow can be tried indoors
+            if (mf.timerSim.Enabled)
+            {
+                c2.Controls.Add(new Label { Text = "Simulator (geen GPS aangesloten)", Font = JohanTheme.Font(12F, FontStyle.Bold), ForeColor = JohanTheme.Text, AutoSize = true, Location = new Point(24, 200) });
+                int sw = (cardW - 48 - 3 * 10) / 4, sy = 232;
+                Knop(c2, new Rectangle(24, sy, sw, 52), "Rijden", "player-play_licht_64", () => { mf.sim.stepDistance = 0.15; });
+                Knop(c2, new Rectangle(24 + sw + 10, sy, sw, 52), "Stop", "player-stop_licht_64", () => { mf.sim.stepDistance = 0; });
+                Knop(c2, new Rectangle(24 + 2 * (sw + 10), sy, sw, 52), "Links", "arrow-left_licht_64", () => { mf.sim.steerAngleScrollBar = Math.Max(-30, mf.sim.steerAngleScrollBar - 8); });
+                Knop(c2, new Rectangle(24 + 3 * (sw + 10), sy, sw, 52), "Rechts", "arrow-right_licht_64", () => { mf.sim.steerAngleScrollBar = Math.Min(30, mf.sim.steerAngleScrollBar + 8); });
+                Knop(c2, new Rectangle(24, sy + 60, cardW - 48, 40), "Rechtuit", "arrow-bar-to-right_licht_64", () => { mf.sim.steerAngleScrollBar = 0; });
+            }
+
             // Rechtstreeks naar AgOpenGPS
             var c3 = Card(new Rectangle(x, gridTop + cardH + gap, cardW, cardH), "Rechtstreeks naar AgOpenGPS");
             c3.Controls.Add(new Label { Text = "De volledige menu's, voor afstellen en storingen.", Font = JohanTheme.Font(10F), ForeColor = JohanTheme.Muted, AutoSize = true, Location = new Point(24, 54) });

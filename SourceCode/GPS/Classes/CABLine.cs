@@ -421,6 +421,13 @@ namespace AgOpenGPS
             GeoCoord[] currentAbLine = { currentLinePtA.ToGeoCoord(), currentLinePtB.ToGeoCoord() };
             LineStyle blackBackgroundStyle = new LineStyle(lineWidth * 3, JohanLook.On ? JohanLook.LineHalo : Colors.Black);
             LineStyle purpleForgroundStyle = new LineStyle(lineWidth, JohanLook.On ? JohanLook.Line : currentAbLinePurple);
+            if (JohanLook.On)
+            {
+                // soft corridor around the active line, as in the canvas
+                GLW.SetLineWidth(Math.Min(14f, lineWidth * 5f));
+                GLW.SetColor(JohanLook.Corridor);
+                GLW.DrawLinesPrimitive(currentAbLine);
+            }
             GLW.DrawLinesPrimitiveLayered(
                 currentAbLine,
                 blackBackgroundStyle,
@@ -449,8 +456,9 @@ namespace AgOpenGPS
                     lines[linesIndex++] = rightEvenLine;
                     lines[linesIndex++] = leftEvenLine;
                 }
-                LineStyle extraGuidelinesBackgroundStyle = new LineStyle(lineWidth * 3, JohanLook.On ? JohanLook.LineHalo : extraGuidelinesBlack);
-                LineStyle extraGuidelinesForegroundStyle = new LineStyle(lineWidth, JohanLook.On ? JohanLook.Guide : extraGuidelinesGreen);
+                // canvas: neighbouring lines thin and quiet, no dark halo
+                LineStyle extraGuidelinesBackgroundStyle = new LineStyle(JohanLook.On ? 1 : lineWidth * 3, JohanLook.On ? JohanLook.Guide : extraGuidelinesBlack);
+                LineStyle extraGuidelinesForegroundStyle = new LineStyle(JohanLook.On ? 1.5f : lineWidth, JohanLook.On ? JohanLook.Guide : extraGuidelinesGreen);
                 GLW.DrawLinesPrimitiveLayered(
                     lines,
                     extraGuidelinesBackgroundStyle,

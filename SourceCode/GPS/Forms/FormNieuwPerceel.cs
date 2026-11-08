@@ -36,9 +36,8 @@ namespace AgOpenGPS
             int cardW = (w - 2 * x - 20) / 2, cardH = 118, gap = 20, top = 150;
             var items = new[]
             {
-                new { Titel = "Uit Lijnbeheer (ISO-XML)", Uitleg = "Perceel, grens en lijnen in één keer, zoals ze in Lijnbeheer staan", Icon = "file-import_licht_64", Actie = new Action(async () => { await SluitHuidig(); DialogResult = DialogResult.Abort; Close(); }) },
-                new { Titel = "Leeg perceel", Uitleg = "Alleen een naam; grens en lijnen maak je rijdend", Icon = "folder-plus_licht_64", Actie = new Action(async () => { await SluitHuidig(); DialogResult = DialogResult.Yes; Close(); }) },
-                new { Titel = "Uit KML (Google Earth)", Uitleg = "Grens uit een KML-bestand", Icon = "world_licht_64", Actie = new Action(async () => { await SluitHuidig(); DialogResult = DialogResult.No; Close(); }) },
+                new { Titel = "Nieuw perceel", Uitleg = "Naam geven, grens uitrijden met de trekker, lijn maken", Icon = "plus_licht_64", Actie = new Action(async () => { await NieuwPerceel(); }) },
+                new { Titel = "Uit Lijnbeheer", Uitleg = "Perceel, grens en lijnen in één keer, zoals ze in Lijnbeheer staan", Icon = "file-import_licht_64", Actie = new Action(async () => { await SluitHuidig(); DialogResult = DialogResult.Abort; Close(); }) },
                 new { Titel = "Kopie van bestaand perceel", Uitleg = "Zelfde grens en lijnen, nieuwe naam voor dit seizoen", Icon = "copy_licht_64", Actie = new Action(() => { DialogResult = DialogResult.Retry; Close(); }) },
                 new { Titel = "Gewoon rijden", Uitleg = "Zonder perceel, met een losse lijn (wordt niet bewaard)", Icon = "tractor_licht_64", Actie = new Action(() => { mf.isEasyDriveRequested = true; DialogResult = DialogResult.OK; Close(); }) },
             };
@@ -83,6 +82,19 @@ namespace AgOpenGPS
             terug.FlatAppearance.BorderSize = 0;
             terug.Click += (s, e) => Terug();
             Controls.Add(terug);
+        }
+
+        // name, field at the current position, then straight into recording the boundary
+        private async System.Threading.Tasks.Task NieuwPerceel()
+        {
+            string naam = AgOpenGPS.Forms.FormInputDialog.ShowInput("Nieuw perceel", "Naam van het perceel", mf);
+            if (string.IsNullOrWhiteSpace(naam)) return;
+            await SluitHuidig();
+            if (!mf.JohanMaakPerceel(naam)) return;
+            mf.isCancelJobMenu = true;
+            DialogResult = DialogResult.Cancel;
+            Close();
+            mf.BeginInvoke(new Action(() => mf.JohanOpenGrens()));
         }
 
         private async System.Threading.Tasks.Task SluitHuidig()

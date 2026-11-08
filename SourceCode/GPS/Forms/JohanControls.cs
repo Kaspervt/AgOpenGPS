@@ -64,7 +64,8 @@ namespace AgOpenGPS
 
             if (img != null && ts.IsEmpty)
             {
-                g.DrawImage(img, (Width - iw) / 2, (Height - ih) / 2, iw, ih);
+                int ix = ImageAlign == ContentAlignment.MiddleLeft ? Padding.Left : ImageAlign == ContentAlignment.MiddleRight ? Width - Padding.Right - iw : (Width - iw) / 2;
+                g.DrawImage(img, ix, (Height - ih) / 2, iw, ih);
             }
             else if (TextImageRelation == TextImageRelation.ImageAboveText && img != null)
             {

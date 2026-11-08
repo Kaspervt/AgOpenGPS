@@ -365,14 +365,27 @@ namespace AgOpenGPS
                         //Draw headland
                         if (bnd.isHeadlandOn && bnd.bndList.Count > 0)
                         {
-                            GL.LineWidth(ABLine.lineWidth * 3);
+                            if (JohanLook.On)
+                            {
+                                // canvas: the boundary is the solid line, the headland a dotted one
+                                GL.Enable(EnableCap.LineStipple);
+                                GL.LineStipple(2, 0x0F0F);
+                                GL.LineWidth(ABLine.lineWidth + 1);
+                                GL.Color4(0.992f, 0.878f, 0.278f, 0.85f);
+                                bnd.bndList[0].hdLine.DrawPolygon();
+                                GL.Disable(EnableCap.LineStipple);
+                            }
+                            else
+                            {
+                                GL.LineWidth(ABLine.lineWidth * 3);
 
-                            GL.Color4(0, 0, 0, 0.80f);
-                            bnd.bndList[0].hdLine.DrawPolygon();
+                                GL.Color4(0, 0, 0, 0.80f);
+                                bnd.bndList[0].hdLine.DrawPolygon();
 
-                            GL.LineWidth(ABLine.lineWidth);
-                            GL.Color4(0.960f, 0.96232f, 0.30f, 1.0f);
-                            bnd.bndList[0].hdLine.DrawPolygon();
+                                GL.LineWidth(ABLine.lineWidth);
+                                GL.Color4(0.960f, 0.96232f, 0.30f, 1.0f);
+                                bnd.bndList[0].hdLine.DrawPolygon();
+                            }
                         }
                     }
 

@@ -1421,10 +1421,11 @@ namespace AgOpenGPS
                     }
                 }
 
-                //vehicle direcvtion reset
+                //vehicle direcvtion reset (Johan screen: tap on the tractor = next symbol)
                 if (point.X > centerX - 40 && point.X < centerX + 40
                     && point.Y > centerY - 60 && point.Y < centerY + 60)
                 {
+                    if (isDriverMode && !isDriverUnlocked) { JohanSymboolWissel(); return; }
                     if (headingFromSource == "Dual") return;
 
                     Array.Clear(stepFixPts, 0, stepFixPts.Length);

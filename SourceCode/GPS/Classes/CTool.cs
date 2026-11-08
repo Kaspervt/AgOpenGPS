@@ -1,4 +1,4 @@
-﻿using AgOpenGPS.Core.Drawing;
+using AgOpenGPS.Core.Drawing;
 using AgOpenGPS.Core.DrawLib;
 using AgOpenGPS.Core.Models;
 using OpenTK.Graphics.OpenGL;
@@ -307,7 +307,13 @@ namespace AgOpenGPS
             for (int j = 0; j < numOfSections; j++)
             {
                 //if section is on, green, if off, red color
-                if (mf.section[j].isSectionOn)
+                if (JohanLook.On)
+                {
+                    // canvas: green when working, amber when on but not mapping yet, grey when off
+                    if (mf.section[j].isSectionOn) GLW.SetColor(mf.section[j].isMappingOn ? JohanLook.SectionOn : JohanLook.SectionWait);
+                    else GLW.SetColor(JohanLook.SectionOff);
+                }
+                else if (mf.section[j].isSectionOn)
                 {
                     if (mf.section[j].sectionBtnState == btnStates.Auto)
                     {

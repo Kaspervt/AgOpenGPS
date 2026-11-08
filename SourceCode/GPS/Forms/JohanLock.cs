@@ -46,6 +46,9 @@ namespace AgOpenGPS
             s.setDisplay_colorFieldNight = JohanTheme.FieldGround;
             s.setDisplay_colorFieldDay = JohanTheme.FieldGround;
             s.setMenu_isGridOn = true;    // faint grid for orientation on the flat ground
+            s.setMenu_isSideGuideLines = true;   // neighbouring lines a tool width apart
+            if (s.setAS_numGuideLines > 4) s.setAS_numGuideLines = 3;
+            JohanLook.Symbol = s.setDisplay_johanSymbool;
             s.setDisplay_isTextureOn = false;                                   // flat ground, no grain
             s.setDisplay_colorSectionsDay = System.Drawing.Color.FromArgb(22, 163, 74);   // worked area green
             s.setDisplay_colorVehicle = JohanTheme.Blue;
