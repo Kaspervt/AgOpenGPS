@@ -12,7 +12,7 @@ namespace AgOpenGPS
 
     public class JohanRoundButton : Button
     {
-        public int Radius { get; set; } = 14;
+        public int Radius { get; set; } = JohanTheme.S(14);
         // colour behind the corners; null = the parent's colour (over the map: the ground colour)
         public Color? Corner { get; set; }
         private bool hover, pressed;
@@ -69,17 +69,17 @@ namespace AgOpenGPS
             }
             else if (TextImageRelation == TextImageRelation.ImageAboveText && img != null)
             {
-                int gap = 8, total = ih + gap + ts.Height, y = (Height - total) / 2;
+                int gap = JohanTheme.S(8), total = ih + gap + ts.Height, y = (Height - total) / 2;
                 g.DrawImage(img, (Width - iw) / 2, y, iw, ih);
                 TextRenderer.DrawText(g, Text, Font, new Rectangle(0, y + ih + gap, Width, ts.Height), fore, TextFormatFlags.HorizontalCenter | TextFormatFlags.NoPadding);
             }
             else
             {
-                int gap = img == null ? 0 : 12, total = iw + gap + ts.Width;
+                int gap = img == null ? 0 : JohanTheme.S(12), total = iw + gap + ts.Width;
                 bool left = TextAlign == ContentAlignment.MiddleLeft;
-                int x = left ? Padding.Left + 8 : Math.Max(4, (Width - total) / 2);
+                int x = left ? Padding.Left + JohanTheme.S(8) : Math.Max(4, (Width - total) / 2);
                 if (img != null) g.DrawImage(img, x, (Height - ih) / 2, iw, ih);
-                int tw = left ? Math.Max(10, Width - x - iw - gap - 8) : Math.Min(ts.Width + 4, Width - x - iw - gap - 2);
+                int tw = left ? Math.Max(10, Width - x - iw - gap - JohanTheme.S(8)) : Math.Min(ts.Width + 4, Width - x - iw - gap - 2);
                 TextRenderer.DrawText(g, Text, Font, new Rectangle(x + iw + gap, 0, tw, Height), fore,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
             }
@@ -92,7 +92,7 @@ namespace AgOpenGPS
     // A rounded label: dark pill over the map, or a status pill with a coloured dot in front of the text
     public class JohanPill : Label
     {
-        public int Radius { get; set; } = 12;
+        public int Radius { get; set; } = JohanTheme.S(12);
         public Color? Dot { get; set; }
         public Color Fill { get; set; } = JohanTheme.Bar;
         public Color? Corner { get; set; }
@@ -113,15 +113,15 @@ namespace AgOpenGPS
                 using (var path = JohanRoundButton.Rounded(new Rectangle(0, 0, Width - 1, Height - 1), Radius))
                 using (var b = new SolidBrush(Fill)) g.FillPath(b, path);
 
-            int x = 14;
+            int x = JohanTheme.S(14), dot = JohanTheme.S(14);
             if (Dot.HasValue)
             {
-                using (var d = new SolidBrush(Dot.Value)) g.FillEllipse(d, x, (Height - 14) / 2, 14, 14);
-                x += 24;
+                using (var d = new SolidBrush(Dot.Value)) g.FillEllipse(d, x, (Height - dot) / 2, dot, dot);
+                x += JohanTheme.S(24);
             }
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis
                         | (Dot.HasValue || TextAlign == ContentAlignment.MiddleLeft ? TextFormatFlags.Left : TextFormatFlags.HorizontalCenter);
-            var rect = Dot.HasValue || TextAlign == ContentAlignment.MiddleLeft ? new Rectangle(x, 0, Width - x - 8, Height) : new Rectangle(0, 0, Width, Height);
+            var rect = Dot.HasValue || TextAlign == ContentAlignment.MiddleLeft ? new Rectangle(x, 0, Width - x - JohanTheme.S(8), Height) : new Rectangle(0, 0, Width, Height);
             TextRenderer.DrawText(g, Text, Font, rect, ForeColor, flags);
         }
     }

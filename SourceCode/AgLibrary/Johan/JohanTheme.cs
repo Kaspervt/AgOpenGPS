@@ -22,10 +22,18 @@ namespace AgLibrary.Johan
         public static Color Muted = Color.FromArgb(148, 163, 184);
         public static bool IsLight { get; private set; }
 
+        // Screen scale: the fork's own screens are designed in 96-dpi pixels; on a display set to
+        // 125 or 150 % every size goes through S() so buttons keep their finger size and the
+        // map (a DPI-aware process) is drawn pixel sharp instead of stretched by Windows.
+        public static float Schaal { get; private set; } = 1f;
+        public static int S(int px) => (int)Math.Round(px * Schaal);
+
         // Called once at start, before any form is built; a switch at runtime restarts the program
         public static void Init(bool light)
         {
             IsLight = light;
+            try { using (var g = Graphics.FromHwnd(IntPtr.Zero)) Schaal = g.DpiX / 96f; } catch { Schaal = 1f; }
+            if (Schaal < 1f) Schaal = 1f;
             if (light)
             {
                 Bg = Color.FromArgb(241, 245, 249);

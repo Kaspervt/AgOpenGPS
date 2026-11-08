@@ -16,6 +16,8 @@ namespace AgOpenGPS
         private vec2 ptA;
         private bool aGezet;
 
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormLijn(FormGPS formGPS)
         {
             mf = formGPS;
@@ -28,8 +30,8 @@ namespace AgOpenGPS
             ShowInTaskbar = false;
 
             var scr = Screen.FromControl(mf).Bounds;
-            int h = 96, w = Math.Min(1000, scr.Width - 32);
-            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - 132 - 12 - h, w, h);
+            int h = S(96), w = Math.Min(S(1000), scr.Width - S(32));
+            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
             BuildLayout();
         }
 
@@ -37,7 +39,7 @@ namespace AgOpenGPS
         {
             var b = new JohanRoundButton
             {
-                Bounds = new Rectangle(x, 14, wdt, Height - 28),
+                Bounds = new Rectangle(x, S(14), wdt, Height - S(28)),
                 Text = tekst,
                 BackColor = JohanTheme.Panel,
                 ForeColor = JohanTheme.Text,
@@ -52,31 +54,31 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int x = 14, gap = 10;
+            int x = S(14), gap = S(10);
             lblStatus = new Label
             {
-                Bounds = new Rectangle(x, 14, 380, Height - 28),
+                Bounds = new Rectangle(x, S(14), S(380), Height - S(28)),
                 Font = JohanTheme.Font(13F),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleLeft,
                 BackColor = Color.Transparent,
                 Text = "Rij het begin van de werkgang en zet punt A"
             };
-            Controls.Add(lblStatus); x += 380 + gap;
+            Controls.Add(lblStatus); x += S(380) + gap;
 
-            btnA = Knop(x, 150, "Punt A", "circle-letter-a_licht_64", () =>
+            btnA = Knop(x, S(150), "Punt A", "circle-letter-a_licht_64", () =>
             {
                 ptA = new vec2(mf.pivotAxlePos.easting, mf.pivotAxlePos.northing);
                 aGezet = true;
                 btnA.BackColor = JohanTheme.Green; btnA.ForeColor = Color.White;
                 btnB.Enabled = true;
                 lblStatus.Text = "Rij minstens 20 m rechtdoor en zet punt B";
-            }); x += 150 + gap;
+            }); x += S(150) + gap;
 
-            btnB = Knop(x, 150, "Punt B", "circle-letter-b_licht_64", MaakLijn);
-            btnB.Enabled = false; x += 150 + 2 * gap;
+            btnB = Knop(x, S(150), "Punt B", "circle-letter-b_licht_64", MaakLijn);
+            btnB.Enabled = false; x += S(150) + 2 * gap;
 
-            var annuleer = Knop(Width - 14 - 130, 130, "Annuleer", "x_licht_64", Close);
+            var annuleer = Knop(Width - S(14) - S(130), S(130), "Annuleer", "x_licht_64", Close);
         }
 
         private void MaakLijn()

@@ -31,6 +31,9 @@ namespace AgOpenGPS
         private readonly StatusRow[] rows = new StatusRow[4];
         private Label lblField;
 
+        // design sizes in 96-dpi pixels; S() scales them to the screen (see JohanTheme.Schaal)
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormStart(FormGPS formGPS)
         {
             mf = formGPS;
@@ -75,7 +78,7 @@ namespace AgOpenGPS
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 AutoSize = true,
-                Location = new Point(40, h - 150)
+                Location = new Point(S(40), h - S(150))
             };
             var lblTitle = new Label
             {
@@ -84,7 +87,7 @@ namespace AgOpenGPS
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 32F, FontStyle.Bold),
                 AutoSize = true,
-                Location = new Point(36, h - 120)
+                Location = new Point(S(36), h - S(120))
             };
             // Labels inside the picture box so they draw over the photo
             photo.Controls.Add(lblSub);
@@ -97,21 +100,21 @@ namespace AgOpenGPS
                     ForeColor = muted,
                     BackColor = Color.Transparent,
                     AutoSize = true,
-                    Location = new Point(40, h / 2)
+                    Location = new Point(S(40), h / 2)
                 });
             }
 
             // Right half
-            int x = leftW + 48;
-            int rightW = w - x - 48;
-            int y = 40;
+            int x = leftW + S(48);
+            int rightW = w - x - S(48);
+            int y = S(40);
 
             Controls.Add(new Label { Text = "Klaar om te rijden?", ForeColor = muted, AutoSize = true, Location = new Point(x, y) });
 
             // light/dark switch, same as on the driving screen: saved in the settings, so it is remembered
             var btnThema = new JohanRoundButton
             {
-                Bounds = new Rectangle(w - 48 - 44, y - 8, 44, 44),
+                Bounds = new Rectangle(w - S(48) - S(44), y - S(8), S(44), S(44)),
                 BackColor = panel,
                 FlatStyle = FlatStyle.Flat,
                 Image = JohanSkin.Icon(JohanTheme.IsLight ? "moon_licht_64" : "sun_licht_64", 24),
@@ -130,7 +133,7 @@ namespace AgOpenGPS
             // off switch next to the theme button; the question is asked first, the closing happens in FormGPS
             var btnUit = new JohanRoundButton
             {
-                Bounds = new Rectangle(btnThema.Left - 8 - 44, y - 8, 44, 44),
+                Bounds = new Rectangle(btnThema.Left - S(8) - S(44), y - S(8), S(44), S(44)),
                 BackColor = panel,
                 FlatStyle = FlatStyle.Flat,
                 Image = JohanSkin.Icon("power_licht_64", 24),
@@ -143,17 +146,17 @@ namespace AgOpenGPS
                 if (mf.johanAfsluitKeuze >= 0) Close();
             };
             Controls.Add(btnUit);
-            y += 40;
+            y += S(40);
 
             string[] names = { "GPS", "RTK-correcties", "Stuurprint", "Trekker" };
             for (int i = 0; i < 4; i++)
             {
                 rows[i] = new StatusRow(names[i], panel, text, muted)
                 {
-                    Bounds = new Rectangle(x, y, rightW, 64)
+                    Bounds = new Rectangle(x, y, rightW, S(64))
                 };
                 Controls.Add(rows[i]);
-                y += 74;
+                y += S(74);
             }
 
             // no tool choice here: the last tool and field load by themselves, switching is one tap on the driving screen
@@ -161,7 +164,7 @@ namespace AgOpenGPS
             var btnGo = new JohanRoundButton
             {
                 Text = "Rijden",
-                Bounds = new Rectangle(x, h - 170, rightW, 90),
+                Bounds = new Rectangle(x, h - S(170), rightW, S(90)),
                 BackColor = green,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -176,7 +179,7 @@ namespace AgOpenGPS
                 ForeColor = muted,
                 Font = new Font("Segoe UI", 10F),
                 AutoSize = true,
-                Location = new Point(x, h - 78)
+                Location = new Point(x, h - S(78))
             };
             Controls.Add(lblField);
 
@@ -188,7 +191,7 @@ namespace AgOpenGPS
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleRight
             };
-            lblBeheer.Location = new Point(w - 48 - 300, h - 64);
+            lblBeheer.Location = new Point(w - S(48) - S(300), h - S(64));
             Controls.Add(lblBeheer);
         }
 
@@ -234,8 +237,9 @@ namespace AgOpenGPS
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     g.DrawImage(src, new Rectangle(0, 0, w, h), srcRect, GraphicsUnit.Pixel);
                     // dark fade at the bottom so the name stays readable
-                    using (var fade = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, h - 260, w, 260), Color.FromArgb(0, 15, 23, 42), Color.FromArgb(200, 15, 23, 42), 90f))
-                        g.FillRectangle(fade, new Rectangle(0, h - 260, w, 260));
+                    int fadeH = S(260);
+                    using (var fade = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, h - fadeH, w, fadeH), Color.FromArgb(0, 15, 23, 42), Color.FromArgb(200, 15, 23, 42), 90f))
+                        g.FillRectangle(fade, new Rectangle(0, h - fadeH, w, fadeH));
                 }
                 return bmp;
             }
@@ -312,8 +316,8 @@ namespace AgOpenGPS
             public StatusRow(string name, Color back, Color fore, Color mutedColor)
             {
                 BackColor = back;
-                lblName = new Label { Text = name, ForeColor = fore, Font = new Font("Segoe UI", 14F, FontStyle.Bold), AutoSize = true, Location = new Point(64, 8), BackColor = Color.Transparent };
-                lblDetail = new Label { Text = "", ForeColor = mutedColor, Font = new Font("Segoe UI", 10F), AutoSize = true, Location = new Point(64, 36), BackColor = Color.Transparent };
+                lblName = new Label { Text = name, ForeColor = fore, Font = new Font("Segoe UI", 14F, FontStyle.Bold), AutoSize = true, Location = new Point(S(64), S(8)), BackColor = Color.Transparent };
+                lblDetail = new Label { Text = "", ForeColor = mutedColor, Font = new Font("Segoe UI", 10F), AutoSize = true, Location = new Point(S(64), S(36)), BackColor = Color.Transparent };
                 Controls.Add(lblName);
                 Controls.Add(lblDetail);
             }
@@ -328,11 +332,11 @@ namespace AgOpenGPS
             {
                 base.OnPaint(e);
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var b = new SolidBrush(dot)) e.Graphics.FillEllipse(b, 18, 18, 28, 28);
+                using (var b = new SolidBrush(dot)) e.Graphics.FillEllipse(b, S(18), S(18), S(28), S(28));
                 if (dot.G > 120 && dot.R < 100)
                 {
-                    using (var p = new Pen(Color.White, 3f))
-                        e.Graphics.DrawLines(p, new[] { new Point(25, 32), new Point(30, 37), new Point(39, 26) });
+                    using (var p = new Pen(Color.White, S(3)))
+                        e.Graphics.DrawLines(p, new[] { new Point(S(25), S(32)), new Point(S(30), S(37)), new Point(S(39), S(26)) });
                 }
             }
         }

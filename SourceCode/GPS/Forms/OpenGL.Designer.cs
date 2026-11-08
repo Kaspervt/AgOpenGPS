@@ -52,6 +52,8 @@ namespace AgOpenGPS
             GL.ClearColor(0.14f, 0.14f, 0.37f, 1.0f);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.CullFace(CullFaceMode.Back);
+            // Johan fork: the map control was created with a 4x multisample mode (FormGPS.Designer.cs)
+            try { GL.Enable(EnableCap.Multisample); } catch { }
             SetZoom();
             tmrWatchdog.Enabled = true;
 

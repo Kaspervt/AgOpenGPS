@@ -9,6 +9,8 @@ namespace AgOpenGPS
     // The actual closing is the normal AgOpenGPS path (fields saved, AgIO closed).
     public class FormAfsluiten : Form
     {
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormAfsluiten(FormGPS mf)
         {
             Name = "FormAfsluiten";
@@ -19,15 +21,15 @@ namespace AgOpenGPS
             Font = JohanTheme.Font(12F);
             ShowInTaskbar = false;
             var scr = Screen.FromControl(mf).Bounds;
-            int w = 640, h = 360;
+            int w = S(640), h = S(360);
             Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Top + (scr.Height - h) / 2, w, h);
 
-            Controls.Add(new Label { Text = "Afsluiten?", Font = JohanTheme.Font(24F, FontStyle.Bold), AutoSize = true, Location = new Point(48, 40) });
-            Controls.Add(new Label { Text = "Het perceel en de lijnen worden bewaard. De volgende keer gaat het verder waar je was.", Font = JohanTheme.Font(11F), ForeColor = JohanTheme.Muted, AutoSize = false, Bounds = new Rectangle(50, 92, w - 100, 50) });
+            Controls.Add(new Label { Text = "Afsluiten?", Font = JohanTheme.Font(24F, FontStyle.Bold), AutoSize = true, Location = new Point(S(48), S(40)) });
+            Controls.Add(new Label { Text = "Het perceel en de lijnen worden bewaard. De volgende keer gaat het verder waar je was.", Font = JohanTheme.Font(11F), ForeColor = JohanTheme.Muted, AutoSize = false, Bounds = new Rectangle(S(50), S(92), w - S(100), S(50)) });
 
-            Knop(new Rectangle(48, 160, w - 96, 64), "Programma afsluiten", "power_licht_64", Color.FromArgb(220, 38, 38), Color.White, () => { Close(); mf.JohanAfsluiten(false); });
-            Knop(new Rectangle(48, 236, (w - 96 - 12) / 2, 64), "Tablet uitzetten", "power_licht_64", JohanTheme.Panel, JohanTheme.Text, () => { Close(); mf.JohanAfsluiten(true); });
-            Knop(new Rectangle(48 + (w - 96 - 12) / 2 + 12, 236, (w - 96 - 12) / 2, 64), "Terug", null, JohanTheme.Green, Color.White, Close);
+            Knop(new Rectangle(S(48), S(160), w - S(96), S(64)), "Programma afsluiten", "power_licht_64", Color.FromArgb(220, 38, 38), Color.White, () => { Close(); mf.JohanAfsluiten(false); });
+            Knop(new Rectangle(S(48), S(236), (w - S(96) - S(12)) / 2, S(64)), "Tablet uitzetten", "power_licht_64", JohanTheme.Panel, JohanTheme.Text, () => { Close(); mf.JohanAfsluiten(true); });
+            Knop(new Rectangle(S(48) + (w - S(96) - S(12)) / 2 + S(12), S(236), (w - S(96) - S(12)) / 2, S(64)), "Terug", null, JohanTheme.Green, Color.White, Close);
         }
 
         private void Knop(Rectangle r, string tekst, string icon, Color back, Color fore, Action actie)

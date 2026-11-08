@@ -17,6 +17,7 @@ namespace AgOpenGPS
         private readonly System.Collections.Generic.List<Button> schuifKnoppen = new System.Collections.Generic.List<Button>();
         private double stap;   // metres, the configured snap distance (coarse step)
         private double fijn;   // metres, the small step (5 cm, or 1 cm when snap is already 5 cm)
+        private static int S(int px) => JohanTheme.S(px);
 
         public FormVerschuif(FormGPS formGPS)
         {
@@ -31,8 +32,8 @@ namespace AgOpenGPS
             TopMost = false;
 
             var scr = Screen.FromControl(mf).Bounds;
-            int h = 96, w = Math.Min(1310, scr.Width - 32);
-            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - 132 - 12 - h, w, h);
+            int h = S(96), w = Math.Min(S(1310), scr.Width - S(32));
+            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
 
             stap = ToolSettings.Default.setAS_snapDistance * 0.01;
             if (stap <= 0) stap = 0.20;
@@ -51,7 +52,7 @@ namespace AgOpenGPS
         {
             var b = new JohanRoundButton
             {
-                Bounds = new Rectangle(x, 14, wdt, Height - 28),
+                Bounds = new Rectangle(x, S(14), wdt, Height - S(28)),
                 Text = tekst,
                 BackColor = JohanTheme.Panel,
                 ForeColor = JohanTheme.Text,
@@ -72,38 +73,38 @@ namespace AgOpenGPS
         {
             string grof = (int)Math.Round(stap * 100) + " cm";
             string klein = (int)Math.Round(fijn * 100) + " cm";
-            int x = 14, gap = 10;
+            int x = S(14), gap = S(10);
             double half = (mf.tool.width - mf.tool.overlap) * 0.5;
 
             // from the outside in: half a tool, coarse step, fine step, offset, fine, coarse, half
-            schuifKnoppen.Add(Knop(x, 124, "½ werktuig", "arrow-big-left_licht_64", () => mf.trk.NudgeTrack(-half))); x += 124 + gap;
-            schuifKnoppen.Add(Knop(x, 96, grof, "chevrons-left_licht_64", () => mf.trk.NudgeTrack(-stap))); x += 96 + gap;
-            schuifKnoppen.Add(Knop(x, 84, klein, "chevron-left_licht_64", () => mf.trk.NudgeTrack(-fijn))); x += 84 + gap;
+            schuifKnoppen.Add(Knop(x, S(124), "½ werktuig", "arrow-big-left_licht_64", () => mf.trk.NudgeTrack(-half))); x += S(124) + gap;
+            schuifKnoppen.Add(Knop(x, S(96), grof, "chevrons-left_licht_64", () => mf.trk.NudgeTrack(-stap))); x += S(96) + gap;
+            schuifKnoppen.Add(Knop(x, S(84), klein, "chevron-left_licht_64", () => mf.trk.NudgeTrack(-fijn))); x += S(84) + gap;
 
             lblOffset = new Label
             {
-                Bounds = new Rectangle(x, 14, 130, Height - 28),
+                Bounds = new Rectangle(x, S(14), S(130), Height - S(28)),
                 Font = JohanTheme.Font(18F, FontStyle.Bold),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent
             };
-            Controls.Add(lblOffset); x += 130 + gap;
+            Controls.Add(lblOffset); x += S(130) + gap;
 
-            schuifKnoppen.Add(Knop(x, 84, klein, "chevron-right_licht_64", () => mf.trk.NudgeTrack(fijn))); x += 84 + gap;
-            schuifKnoppen.Add(Knop(x, 96, grof, "chevrons-right_licht_64", () => mf.trk.NudgeTrack(stap))); x += 96 + gap;
-            schuifKnoppen.Add(Knop(x, 124, "½ werktuig", "arrow-big-right_licht_64", () => mf.trk.NudgeTrack(half))); x += 124 + 2 * gap;
+            schuifKnoppen.Add(Knop(x, S(84), klein, "chevron-right_licht_64", () => mf.trk.NudgeTrack(fijn))); x += S(84) + gap;
+            schuifKnoppen.Add(Knop(x, S(96), grof, "chevrons-right_licht_64", () => mf.trk.NudgeTrack(stap))); x += S(96) + gap;
+            schuifKnoppen.Add(Knop(x, S(124), "½ werktuig", "arrow-big-right_licht_64", () => mf.trk.NudgeTrack(half))); x += S(124) + 2 * gap;
 
-            schuifKnoppen.Add(Knop(x, 136, "Naar trekker", "focus-2_licht_64", () => mf.trk.SnapToPivot())); x += 136 + gap;
-            schuifKnoppen.Add(Knop(x, 92, "Op nul", "refresh_licht_64", () => mf.trk.NudgeDistanceReset())); x += 92 + gap;
+            schuifKnoppen.Add(Knop(x, S(136), "Naar trekker", "focus-2_licht_64", () => mf.trk.SnapToPivot())); x += S(136) + gap;
+            schuifKnoppen.Add(Knop(x, S(92), "Op nul", "refresh_licht_64", () => mf.trk.NudgeDistanceReset())); x += S(92) + gap;
 
-            btnSlot = Knop(Width - 14 - 96 - 10 - 96, 96, "Slot", "adjustments-horizontal_licht_64", () =>
+            btnSlot = Knop(Width - S(14) - S(96) - S(10) - S(96), S(96), "Slot", "adjustments-horizontal_licht_64", () =>
             {
                 bool nu = !mf.JohanIsTrackLocked(mf.trk.idx);
                 mf.JohanSetTrackLocked(mf.trk.idx, nu);
                 mf.TimedMessageBox(1500, "Lijn", nu ? "Lijn vergrendeld: verschuiven uit" : "Lijn vrijgegeven");
             });
-            var klaar = Knop(Width - 14 - 96, 96, "Klaar", "check_licht_64", () => Close());
+            var klaar = Knop(Width - S(14) - S(96), S(96), "Klaar", "check_licht_64", () => Close());
             klaar.BackColor = JohanTheme.Green;
             klaar.ForeColor = Color.White;
         }

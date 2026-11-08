@@ -16,6 +16,8 @@ namespace AgOpenGPS
     {
         private readonly FormGPS mf;
 
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormWerktuig(FormGPS formGPS)
         {
             mf = formGPS;
@@ -33,15 +35,15 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int w = Width, h = Height, x = 56;
+            int w = Width, h = Height, x = S(56);
             int listW = w - 2 * x;
 
-            Controls.Add(new Label { Text = "Welk werktuig?", Font = JohanTheme.Font(28F, FontStyle.Bold), AutoSize = true, Location = new Point(x, 36) });
-            Controls.Add(new Label { Text = "Het laatst gekozen werktuig blijft staan tot je wisselt", Font = JohanTheme.Font(11F), ForeColor = JohanTheme.Muted, AutoSize = true, Location = new Point(x + 2, 92) });
+            Controls.Add(new Label { Text = "Welk werktuig?", Font = JohanTheme.Font(28F, FontStyle.Bold), AutoSize = true, Location = new Point(x, S(36)) });
+            Controls.Add(new Label { Text = "Het laatst gekozen werktuig blijft staan tot je wisselt", Font = JohanTheme.Font(11F), ForeColor = JohanTheme.Muted, AutoSize = true, Location = new Point(x + S(2), S(92)) });
 
             var lijst = new FlowLayoutPanel
             {
-                Bounds = new Rectangle(x, 150, listW, h - 150 - 130),
+                Bounds = new Rectangle(x, S(150), listW, h - S(150) - S(130)),
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
@@ -61,10 +63,10 @@ namespace AgOpenGPS
                     string name = Path.GetFileNameWithoutExtension(f);
                     bool selected = name == RegistrySettings.toolProfileName;
                     // one row: the tool button and a pencil to edit it
-                    var rij = new Panel { Size = new Size(listW - 24, 72), Margin = new Padding(0, 0, 0, 10), BackColor = JohanTheme.Bg };
+                    var rij = new Panel { Size = new Size(listW - S(24), S(72)), Margin = new Padding(0, 0, 0, S(10)), BackColor = JohanTheme.Bg };
                     var potlood = new JohanRoundButton
                     {
-                        Bounds = new Rectangle(listW - 24 - 72, 0, 72, 72),
+                        Bounds = new Rectangle(listW - S(24) - S(72), 0, S(72), S(72)),
                         BackColor = JohanTheme.Panel,
                         FlatStyle = FlatStyle.Flat,
                         Image = JohanSkin.Icon("pencil_licht_64", 30),
@@ -76,16 +78,16 @@ namespace AgOpenGPS
                     var b = new JohanRoundButton
                     {
                         Text = name + "      " + Breedte(f, selected ? mf.tool.width : double.NaN) + (selected ? "   (nu achter de trekker)" : ""),
-                        Bounds = new Rectangle(0, 0, listW - 24 - 72 - 10, 72),
+                        Bounds = new Rectangle(0, 0, listW - S(24) - S(72) - S(10), S(72)),
                         BackColor = selected ? (JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95)) : JohanTheme.Panel,
                         ForeColor = JohanTheme.Text,
                         FlatStyle = FlatStyle.Flat,
                         Font = JohanTheme.Font(16F, FontStyle.Bold),
                         TextAlign = ContentAlignment.MiddleLeft,
-                        Padding = new Padding(20, 0, 0, 0),
+                        Padding = new Padding(S(20), 0, 0, 0),
                         Tag = name
                     };
-                    b.FlatAppearance.BorderSize = selected ? 2 : 0;
+                    b.FlatAppearance.BorderSize = selected ? S(2) : 0;
                     b.FlatAppearance.BorderColor = JohanTheme.Green;
                     b.Click += (s, e) => { LoadTool(mf, (string)((Button)s).Tag); Close(); };
                     rij.Controls.Add(b);
@@ -97,7 +99,7 @@ namespace AgOpenGPS
             var terug = new JohanRoundButton
             {
                 Text = "Terug",
-                Bounds = new Rectangle(x, h - 100, 200, 64),
+                Bounds = new Rectangle(x, h - S(100), S(200), S(64)),
                 BackColor = JohanTheme.Panel,
                 ForeColor = JohanTheme.Text,
                 FlatStyle = FlatStyle.Flat,
@@ -112,7 +114,7 @@ namespace AgOpenGPS
             {
                 Text = "Nieuw werktuig",
                 Image = JohanSkin.Icon("plus_licht_64", 28),
-                Bounds = new Rectangle(w - x - 280, h - 100, 280, 64),
+                Bounds = new Rectangle(w - x - S(280), h - S(100), S(280), S(64)),
                 BackColor = JohanTheme.Green,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,

@@ -19,6 +19,9 @@ namespace AgOpenGPS
     {
         private readonly FormGPS mf;
 
+        // design pixels (96 dpi) to screen pixels
+        private static int S(int px) => JohanTheme.S(px);
+
         private readonly Color bg = JohanTheme.Bg;
         private readonly Color panel = JohanTheme.Panel;
         private readonly Color selected = JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95);
@@ -53,22 +56,22 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int w = Width, h = Height, x = 56;
+            int w = Width, h = Height, x = S(56);
             int listW = w - 2 * x;
 
-            Controls.Add(new Label { Text = "Welk perceel?", Font = new Font("Segoe UI", 28F, FontStyle.Bold), ForeColor = text, AutoSize = true, Location = new Point(x, 36) });
-            Controls.Add(new Label { Text = "Dichtstbijzijnde bovenaan", Font = new Font("Segoe UI", 11F), ForeColor = muted, AutoSize = true, Location = new Point(x + 2, 92) });
+            Controls.Add(new Label { Text = "Welk perceel?", Font = new Font("Segoe UI", 28F, FontStyle.Bold), ForeColor = text, AutoSize = true, Location = new Point(x, S(36)) });
+            Controls.Add(new Label { Text = "Dichtstbijzijnde bovenaan", Font = new Font("Segoe UI", 11F), ForeColor = muted, AutoSize = true, Location = new Point(x + S(2), S(92)) });
 
-            var kop = new Panel { Bounds = new Rectangle(x, 128, listW, 28), BackColor = bg };
-            kop.Controls.Add(new Label { Text = "PERCEEL", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(140, 4) });
-            kop.Controls.Add(new Label { Text = "OPPERVLAK", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 440, 4) });
-            kop.Controls.Add(new Label { Text = "AFSTAND", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 300, 4) });
-            kop.Controls.Add(new Label { Text = "LIJNEN", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 170, 4) });
+            var kop = new Panel { Bounds = new Rectangle(x, S(128), listW, S(28)), BackColor = bg };
+            kop.Controls.Add(new Label { Text = "PERCEEL", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(S(140), S(4)) });
+            kop.Controls.Add(new Label { Text = "OPPERVLAK", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - S(440), S(4)) });
+            kop.Controls.Add(new Label { Text = "AFSTAND", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - S(300), S(4)) });
+            kop.Controls.Add(new Label { Text = "LIJNEN", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - S(170), S(4)) });
             Controls.Add(kop);
 
             var lijst = new FlowLayoutPanel
             {
-                Bounds = new Rectangle(x, 160, listW, h - 160 - 130),
+                Bounds = new Rectangle(x, S(160), listW, h - S(160) - S(130)),
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
@@ -80,8 +83,8 @@ namespace AgOpenGPS
             {
                 var b = new JohanRoundButton
                 {
-                    Size = new Size(listW - 24, 72),
-                    Margin = new Padding(0, 0, 0, 10),
+                    Size = new Size(listW - S(24), S(72)),
+                    Margin = new Padding(0, 0, 0, S(10)),
                     BackColor = rij.Huidig ? selected : panel,
                     ForeColor = text,
                     FlatStyle = FlatStyle.Flat,
@@ -93,20 +96,20 @@ namespace AgOpenGPS
                 b.Click += (s, e) => OpenField(dir);
 
                 // Labels inside the button draw over it; forward their clicks
-                var vorm = new Vormpje(rij.Vorm) { Bounds = new Rectangle(20, 6, 96, 60) };
+                var vorm = new Vormpje(rij.Vorm) { Bounds = new Rectangle(S(20), S(6), S(96), S(60)) };
                 vorm.Click += (s, e) => OpenField(dir);
                 b.Controls.Add(vorm);
-                b.Controls.Add(Lbl(rij.Naam, 140, 20, text, 16F, FontStyle.Bold, dir));
-                b.Controls.Add(Lbl(rij.Ha > 0 ? rij.Ha.ToString("0.0") + " ha" : "geen grens", listW - 440, 22, text, 14F, FontStyle.Regular, dir));
-                b.Controls.Add(Lbl(rij.Km < 0 ? "" : rij.Km < 0.05 ? "hier" : rij.Km.ToString("0.0") + " km", listW - 300, 22, muted, 14F, FontStyle.Regular, dir));
-                b.Controls.Add(Lbl(rij.Lijnen, listW - 170, 22, muted, 12F, FontStyle.Regular, dir));
+                b.Controls.Add(Lbl(rij.Naam, S(140), S(20), text, 16F, FontStyle.Bold, dir));
+                b.Controls.Add(Lbl(rij.Ha > 0 ? rij.Ha.ToString("0.0") + " ha" : "geen grens", listW - S(440), S(22), text, 14F, FontStyle.Regular, dir));
+                b.Controls.Add(Lbl(rij.Km < 0 ? "" : rij.Km < 0.05 ? "hier" : rij.Km.ToString("0.0") + " km", listW - S(300), S(22), muted, 14F, FontStyle.Regular, dir));
+                b.Controls.Add(Lbl(rij.Lijnen, listW - S(170), S(22), muted, 12F, FontStyle.Regular, dir));
                 lijst.Controls.Add(b);
             }
 
             var terug = new JohanRoundButton
             {
                 Text = "Terug",
-                Bounds = new Rectangle(x, h - 100, 200, 64),
+                Bounds = new Rectangle(x, h - S(100), S(200), S(64)),
                 BackColor = panel,
                 ForeColor = text,
                 FlatStyle = FlatStyle.Flat,
@@ -120,7 +123,7 @@ namespace AgOpenGPS
             {
                 Text = "Nieuw perceel",
                 Image = JohanSkin.Icon("plus_licht_64", 28),
-                Bounds = new Rectangle(w - x - 280, h - 100, 280, 64),
+                Bounds = new Rectangle(w - x - S(280), h - S(100), S(280), S(64)),
                 BackColor = JohanTheme.Green,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -189,14 +192,14 @@ namespace AgOpenGPS
                 if (ring == null || ring.Count < 3) return;
                 double minE = ring.Min(p => p.easting), maxE = ring.Max(p => p.easting);
                 double minN = ring.Min(p => p.northing), maxN = ring.Max(p => p.northing);
-                double sc = Math.Min((Width - 6) / Math.Max(1, maxE - minE), (Height - 6) / Math.Max(1, maxN - minN));
+                double sc = Math.Min((Width - S(6)) / Math.Max(1, maxE - minE), (Height - S(6)) / Math.Max(1, maxN - minN));
                 float ox = (float)((Width - (maxE - minE) * sc) / 2), oy = (float)((Height - (maxN - minN) * sc) / 2);
                 var pts = new PointF[ring.Count];
                 for (int i = 0; i < ring.Count; i++)
                     pts[i] = new PointF(ox + (float)((ring[i].easting - minE) * sc), (float)(Height - oy - (ring[i].northing - minN) * sc));
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 using (var fill = new SolidBrush(Color.FromArgb(107, 142, 63)))
-                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 2f))
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), S(2)))
                 {
                     e.Graphics.FillPolygon(fill, pts);
                     e.Graphics.DrawPolygon(pen, pts);

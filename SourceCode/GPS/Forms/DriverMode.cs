@@ -28,11 +28,14 @@ namespace AgOpenGPS
         private Label lblJLijn, lblJSpeed;
         private JohanPill lblJRtk, lblJTrekker, lblJBewerkt, lblJAfstand;
         private JohanRoundButton btnJZoomIn, btnJZoomUit, btnJ3D;
-        private Button btnJInstellingen;
+        private Button btnJInstellingen, btnJUit;
         private Timer johanTick;
         private Control[] johanSectionButtons;
         private bool johanLayoutBusy;
-        private const int JohanTopH = 68, JohanBottomH = 132;
+        // design sizes in 96-dpi pixels; S() scales them to the screen (see JohanTheme.Schaal)
+        private static int JohanTopH => JohanTheme.S(68);
+        private static int JohanBottomH => JohanTheme.S(132);
+        private static int S(int px) => JohanTheme.S(px);
 
         // Called once from FormGPS_Load.
         private void InitDriverMode()
@@ -183,14 +186,14 @@ namespace AgOpenGPS
 
             btnJPerceel = JohanButton("Kies perceel", "polygon_licht_64", 24, 14F, false);
             btnJPerceel.TextAlign = ContentAlignment.MiddleLeft;
-            btnJPerceel.Padding = new Padding(8, 0, 8, 0);
+            btnJPerceel.Padding = new Padding(S(8), 0, S(8), 0);
             btnJPerceel.Click += (s, e) => btnJobMenu_Click(btnJobMenu, EventArgs.Empty);
 
             lblJLijn = JohanLabel("", 14F, FontStyle.Regular, JohanTheme.Text);
 
             btnJWerktuig = JohanButton("Werktuig", "tool_licht_64", 24, 14F, false);
             btnJWerktuig.TextAlign = ContentAlignment.MiddleLeft;
-            btnJWerktuig.Padding = new Padding(8, 0, 8, 0);
+            btnJWerktuig.Padding = new Padding(S(8), 0, S(8), 0);
             btnJWerktuig.Click += (s, e) => { using (var f = new FormWerktuig(this)) f.ShowDialog(this); };
 
             lblJRtk = new JohanPill { Text = "RTK", Font = JohanTheme.Font(14F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = Color.Transparent, Dot = JohanTheme.Red };
@@ -217,7 +220,11 @@ namespace AgOpenGPS
             // settings in plain sight (the long press on the speed still works too)
             btnJInstellingen = JohanButton("", "settings_licht_64", 24, 10F, false);
             btnJInstellingen.Click += (s, e) => { using (var f = new FormBeheer(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
-            panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema, btnJInstellingen });
+
+            // off: the same question as in Beheer and on the start screen
+            btnJUit = JohanButton("", "power_licht_64", 24, 10F, false);
+            btnJUit.Click += (s, e) => { using (var f = new FormAfsluiten(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
+            panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema, btnJInstellingen, btnJUit });
             Controls.Add(panelJohanTop);
 
             // ---- bottom bar
@@ -258,16 +265,16 @@ namespace AgOpenGPS
             lblJAfstand = new JohanPill { Font = JohanTheme.Font(20F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Corner = JohanTheme.FieldGround, Visible = false };
             Controls.Add(lblJAfstand);
             btnJZoomIn = (JohanRoundButton)JohanButton("", "zoom-in_licht_64", 28, 10F, false);
-            btnJZoomIn.BackColor = JohanTheme.Bg; btnJZoomIn.Radius = 12; btnJZoomIn.Visible = false; btnJZoomIn.Corner = JohanTheme.FieldGround;
+            btnJZoomIn.BackColor = JohanTheme.Bg; btnJZoomIn.Radius = S(12); btnJZoomIn.Visible = false; btnJZoomIn.Corner = JohanTheme.FieldGround;
             btnJZoomIn.Click += (s, e) => { camera.ZoomIn(); SetZoom(); };
             btnJZoomUit = (JohanRoundButton)JohanButton("", "zoom-out_licht_64", 28, 10F, false);
-            btnJZoomUit.BackColor = JohanTheme.Bg; btnJZoomUit.Radius = 12; btnJZoomUit.Visible = false; btnJZoomUit.Corner = JohanTheme.FieldGround;
+            btnJZoomUit.BackColor = JohanTheme.Bg; btnJZoomUit.Radius = S(12); btnJZoomUit.Visible = false; btnJZoomUit.Corner = JohanTheme.FieldGround;
             btnJZoomUit.Click += (s, e) => { camera.ZoomOut(); SetZoom(); };
             Controls.Add(btnJZoomIn);
             Controls.Add(btnJZoomUit);
             // 2D flat and north up, or 3D tilted behind the tractor (the AgOpenGPS camera modes)
             btnJ3D = (JohanRoundButton)JohanButton("", "cube_licht_64", 28, 10F, false);
-            btnJ3D.BackColor = JohanTheme.Bg; btnJ3D.Radius = 12; btnJ3D.Visible = false; btnJ3D.Corner = JohanTheme.FieldGround;
+            btnJ3D.BackColor = JohanTheme.Bg; btnJ3D.Radius = S(12); btnJ3D.Visible = false; btnJ3D.Corner = JohanTheme.FieldGround;
             btnJ3D.Click += (s, e) =>
             {
                 // cycle: 2D (flat) -> 3D schuin (45) -> 3D steil (65) -> 2D; any angle in between by dragging
@@ -312,7 +319,7 @@ namespace AgOpenGPS
             {
                 if (e.Button != MouseButtons.Left || johanDragY < 0 || !JohanSchermActief) return;
                 int dy = e.Y - johanDragY;
-                if (!johanDragging && Math.Abs(dy) < 12) return;
+                if (!johanDragging && Math.Abs(dy) < S(12)) return;
                 johanDragging = true;
                 JohanZetHoek(camera.PitchInDegrees + dy * 0.25);   // drag up = tilt further
                 johanDragY = e.Y;
@@ -393,26 +400,28 @@ namespace AgOpenGPS
                 var ogl = new Rectangle(0, JohanTopH, w, h - JohanTopH - JohanBottomH);
                 if (oglMain.Bounds != ogl) oglMain.Bounds = ogl;
 
-                // top bar contents
-                int y = 12, bh = JohanTopH - 24, x = 16;
-                // right block first (speed, trekker, RTK, three square buttons), the left block gets what is left
-                int rightW = 16 + 210 + 150 + 210 + 12 + 3 * (bh + 8);
-                int leftW = Math.Max(420, w - rightW - 32);
-                int perceelW = Math.Min(300, (int)(leftW * 0.38)), werktuigW = Math.Min(260, (int)(leftW * 0.34));
-                int lijnW = Math.Max(100, leftW - perceelW - werktuigW - 24);
-                btnJPerceel.Bounds = new Rectangle(x, y, perceelW, bh); x += perceelW + 12;
-                lblJLijn.Bounds = new Rectangle(x, y, lijnW, bh); x += lijnW + 12;
+                // top bar contents (design pixels through S())
+                int y = S(12), bh = JohanTopH - S(24), x = S(16);
+                int speedW = S(210), trekkerW = S(150), rtkW = S(210), g8 = S(8), g12 = S(12), g16 = S(16);
+                // right block first (speed, trekker, RTK, four square buttons), the left block gets what is left
+                int rightW = g16 + speedW + trekkerW + rtkW + g12 + 4 * (bh + g8);
+                int leftW = Math.Max(S(420), w - rightW - S(32));
+                int perceelW = Math.Min(S(300), (int)(leftW * 0.38)), werktuigW = Math.Min(S(260), (int)(leftW * 0.34));
+                int lijnW = Math.Max(S(100), leftW - perceelW - werktuigW - S(24));
+                btnJPerceel.Bounds = new Rectangle(x, y, perceelW, bh); x += perceelW + g12;
+                lblJLijn.Bounds = new Rectangle(x, y, lijnW, bh); x += lijnW + g12;
                 btnJWerktuig.Bounds = new Rectangle(x, y, werktuigW, bh);
 
-                lblJSpeed.Bounds = new Rectangle(w - 16 - 210, 8, 210, JohanTopH - 16);
-                lblJTrekker.Bounds = new Rectangle(w - 16 - 210 - 150, y, 150, bh);
-                lblJRtk.Bounds = new Rectangle(w - 16 - 210 - 150 - 210, y, 210, bh);
-                btnJInstellingen.Bounds = new Rectangle(w - 16 - 210 - 150 - 210 - 12 - bh, y, bh, bh);
-                btnJThema.Bounds = new Rectangle(btnJInstellingen.Left - 8 - bh, y, bh, bh);
-                btnJLuchtfoto.Bounds = new Rectangle(btnJThema.Left - 8 - bh, y, bh, bh);
+                lblJSpeed.Bounds = new Rectangle(w - g16 - speedW, g8, speedW, JohanTopH - g16);
+                lblJTrekker.Bounds = new Rectangle(w - g16 - speedW - trekkerW, y, trekkerW, bh);
+                lblJRtk.Bounds = new Rectangle(w - g16 - speedW - trekkerW - rtkW, y, rtkW, bh);
+                btnJUit.Bounds = new Rectangle(w - g16 - speedW - trekkerW - rtkW - g12 - bh, y, bh, bh);
+                btnJInstellingen.Bounds = new Rectangle(btnJUit.Left - g8 - bh, y, bh, bh);
+                btnJThema.Bounds = new Rectangle(btnJInstellingen.Left - g8 - bh, y, bh, bh);
+                btnJLuchtfoto.Bounds = new Rectangle(btnJThema.Left - g8 - bh, y, bh, bh);
 
                 // bottom bar: 1fr 1fr 1fr 2fr, 12 px gaps, 14/16 px padding
-                int gap = 12, pad = 16, top = 14, bhh = JohanBottomH - 28;
+                int gap = S(12), pad = S(16), top = S(14), bhh = JohanBottomH - S(28);
                 int unit = (w - 2 * pad - 3 * gap) / 5;
                 int bx = pad;
                 btnJAndereLijn.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
@@ -420,11 +429,12 @@ namespace AgOpenGPS
                 btnJKopakker.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
                 btnJAuto.Bounds = new Rectangle(bx, top, w - pad - bx, bhh);
 
-                lblJBewerkt.Bounds = new Rectangle(w - 20 - 260, h - JohanBottomH - 16 - 40, 260, 40);
-                lblJAfstand.Bounds = new Rectangle((w - 560) / 2, JohanTopH + 20, 560, 56);
-                btnJZoomIn.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20, 56, 56);
-                btnJZoomUit.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20 + 56 + 10, 56, 56);
-                btnJ3D.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20 + 2 * (56 + 10) + 12, 56, 56);
+                int z = S(56), z10 = S(10), m20 = S(20);
+                lblJBewerkt.Bounds = new Rectangle(w - m20 - S(260), h - JohanBottomH - g16 - S(40), S(260), S(40));
+                lblJAfstand.Bounds = new Rectangle((w - S(560)) / 2, JohanTopH + m20, S(560), z);
+                btnJZoomIn.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20, z, z);
+                btnJZoomUit.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + z + z10, z, z);
+                btnJ3D.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 2 * (z + z10) + g12, z, z);
 
                 // original chrome away
                 panelLeft.Visible = false;

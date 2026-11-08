@@ -219,6 +219,17 @@ namespace AgOpenGPS
             BeginInvoke(new Action(() => { try { Close(); } catch { } }));
         }
 
+        // The close question when the window is closed another way (Alt+F4, task bar): our own screen
+        // instead of FormSaveOrNot. Returns the SaveOrNot codes: 0 exit, 1 stay, 2 shut the computer down.
+        public int JohanVraagAfsluiten()
+        {
+            johanAfsluitKeuze = -1;
+            using (var f = new FormAfsluiten(this)) f.ShowDialog(this);
+            int keuze = johanAfsluitKeuze < 0 ? 1 : johanAfsluitKeuze;
+            johanAfsluitKeuze = -1;
+            return keuze;
+        }
+
         // Beheer: the full AgOpenGPS field menu once (import of KML, ISO-XML, AgShare, templates)
         public bool johanUpstreamJobMenu;
         public void JohanImportMenu()

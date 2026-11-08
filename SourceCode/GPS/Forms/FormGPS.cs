@@ -821,7 +821,7 @@ namespace AgOpenGPS
             }
 
             // Get user choice for shutdown behavior (a Johan restart never asks, the Johan screen asked already)
-            int choice = johanRestartPending ? 0 : johanAfsluitKeuze >= 0 ? johanAfsluitKeuze : SaveOrNot();
+            int choice = johanRestartPending ? 0 : johanAfsluitKeuze >= 0 ? johanAfsluitKeuze : isDriverMode ? JohanVraagAfsluiten() : SaveOrNot();
             johanAfsluitKeuze = -1;
             if (choice == 1)
             {

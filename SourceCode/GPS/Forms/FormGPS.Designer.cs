@@ -79,7 +79,8 @@ namespace AgOpenGPS
             this.btnSection10Man = new System.Windows.Forms.Button();
             this.btnSection11Man = new System.Windows.Forms.Button();
             this.btnSection12Man = new System.Windows.Forms.Button();
-            this.oglMain = new OpenTK.GLControl();
+            // Johan fork: 4x multisampling on the map only (oglBack reads pixels back and stays plain)
+            this.oglMain = new OpenTK.GLControl(new OpenTK.Graphics.GraphicsMode(32, 24, 0, 4));
             this.oglBack = new OpenTK.GLControl();
             this.lblHz = new System.Windows.Forms.Label();
             this.statusStripLeft = new System.Windows.Forms.StatusStrip();

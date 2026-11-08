@@ -115,6 +115,7 @@ namespace AgLibrary.Johan
 
         public static Bitmap Icon(string file, int size)
         {
+            size = JohanTheme.S(size);   // callers ask in design pixels, the bitmap follows the screen scale
             string key = file + "@" + size;   // the requested name, so a theme switch can resolve it again
             file = Resolve(file);
             lock (iconCache)

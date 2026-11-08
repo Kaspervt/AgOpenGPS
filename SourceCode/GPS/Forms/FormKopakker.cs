@@ -17,6 +17,8 @@ namespace AgOpenGPS
         private Button btnAan, btnSecties;
         private double breedte;
 
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormKopakker(FormGPS formGPS)
         {
             mf = formGPS;
@@ -30,8 +32,8 @@ namespace AgOpenGPS
             TopMost = false;
 
             var scr = Screen.FromControl(mf).Bounds;
-            int h = 96, w = Math.Min(1310, scr.Width - 32);
-            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - 132 - 12 - h, w, h);
+            int h = S(96), w = Math.Min(S(1310), scr.Width - S(32));
+            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
 
             breedte = mf.JohanKopakkerBreedte();
             if (breedte <= 0) breedte = Math.Round(Math.Max(1.0, mf.tool.width - mf.tool.overlap) * 2) / 2;
@@ -46,7 +48,7 @@ namespace AgOpenGPS
         {
             var b = new JohanRoundButton
             {
-                Bounds = new Rectangle(x, 14, wdt, Height - 28),
+                Bounds = new Rectangle(x, S(14), wdt, Height - S(28)),
                 Text = tekst,
                 BackColor = JohanTheme.Panel,
                 ForeColor = JohanTheme.Text,
@@ -73,39 +75,39 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int x = 14, gap = 10;
+            int x = S(14), gap = S(10);
             double werk = Math.Max(0.5, mf.tool.width - mf.tool.overlap);
 
-            Knop(x, 96, "0,5 m", "chevron-left_licht_64", () => Bouw(breedte - 0.5)); x += 96 + gap;
+            Knop(x, S(96), "0,5 m", "chevron-left_licht_64", () => Bouw(breedte - 0.5)); x += S(96) + gap;
             lblBreedte = new Label
             {
-                Bounds = new Rectangle(x, 14, 150, Height - 28),
+                Bounds = new Rectangle(x, S(14), S(150), Height - S(28)),
                 Font = JohanTheme.Font(18F, FontStyle.Bold),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent
             };
-            Controls.Add(lblBreedte); x += 150 + gap;
-            Knop(x, 96, "0,5 m", "chevron-right_licht_64", () => Bouw(breedte + 0.5)); x += 96 + 2 * gap;
+            Controls.Add(lblBreedte); x += S(150) + gap;
+            Knop(x, S(96), "0,5 m", "chevron-right_licht_64", () => Bouw(breedte + 0.5)); x += S(96) + 2 * gap;
 
-            Knop(x, 150, "1 werkgang", "kopakker_licht_64", () => Bouw(werk)); x += 150 + gap;
-            Knop(x, 160, "2 werkgangen", "kopakker_licht_64", () => Bouw(2 * werk)); x += 160 + 2 * gap;
+            Knop(x, S(150), "1 werkgang", "kopakker_licht_64", () => Bouw(werk)); x += S(150) + gap;
+            Knop(x, S(160), "2 werkgangen", "kopakker_licht_64", () => Bouw(2 * werk)); x += S(160) + 2 * gap;
 
-            btnAan = Knop(x, 96, "Aan", "check_licht_64", () =>
+            btnAan = Knop(x, S(96), "Aan", "check_licht_64", () =>
             {
                 if (!Heeft) { Bouw(breedte); return; }
                 mf.bnd.isHeadlandOn = !mf.bnd.isHeadlandOn;
                 if (!mf.bnd.isHeadlandOn && mf.vehicle.isHydLiftOn) mf.vehicle.isHydLiftOn = false;
-            }); x += 96 + gap;
-            btnSecties = Knop(x, 200, "Secties uit op kop", "box-margin_licht_64", () =>
+            }); x += S(96) + gap;
+            btnSecties = Knop(x, S(200), "Secties uit op kop", "box-margin_licht_64", () =>
             {
                 mf.bnd.isSectionControlledByHeadland = !mf.bnd.isSectionControlledByHeadland;
                 ToolSettings.Default.setHeadland_isSectionControlled = mf.bnd.isSectionControlledByHeadland;
                 ToolSettings.Default.Save();
-            }); x += 200 + gap;
-            Knop(x, 92, "Weg", "trash_licht_64", () => { mf.JohanBouwKopakker(0); });
+            }); x += S(200) + gap;
+            Knop(x, S(92), "Weg", "trash_licht_64", () => { mf.JohanBouwKopakker(0); });
 
-            var klaar = Knop(Width - 14 - 96, 96, "Klaar", "check_licht_64", () => Close());
+            var klaar = Knop(Width - S(14) - S(96), S(96), "Klaar", "check_licht_64", () => Close());
             klaar.BackColor = JohanTheme.Green;
             klaar.ForeColor = Color.White;
         }

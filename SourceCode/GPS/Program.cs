@@ -51,6 +51,15 @@ namespace AgOpenGPS
             }
             else
             {
+                // Johan fork: the message in the theme and in Dutch when the lock file is there
+                if (JohanLock.IsLocked)
+                {
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
+                    AgLibrary.Johan.JohanTheme.Init(AgLibrary.Johan.JohanTheme.ReadLightFromRegistry());
+                    FormDialog.Show("Al gestart", "AgOpenGPS draait al. Kijk op de taakbalk of wacht even tot het venster er is.", DialogSeverity.Warning);
+                    return;
+                }
                 FormDialog.Show(
                     "Warning",
                     "AgOpenGPS is Already Running",

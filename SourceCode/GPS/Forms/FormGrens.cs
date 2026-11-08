@@ -16,6 +16,8 @@ namespace AgOpenGPS
         private JohanRoundButton btnStart, btnKant, btnKlaar;
         private bool opnemen;
 
+        private static int S(int px) => JohanTheme.S(px);
+
         public FormGrens(FormGPS formGPS)
         {
             mf = formGPS;
@@ -28,8 +30,8 @@ namespace AgOpenGPS
             ShowInTaskbar = false;
 
             var scr = Screen.FromControl(mf).Bounds;
-            int h = 96, w = Math.Min(1200, scr.Width - 32);
-            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - 132 - 12 - h, w, h);
+            int h = S(96), w = Math.Min(S(1200), scr.Width - S(32));
+            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
 
             BuildLayout();
             tick.Tick += (s, e) => UpdateStatus();
@@ -51,7 +53,7 @@ namespace AgOpenGPS
         {
             var b = new JohanRoundButton
             {
-                Bounds = new Rectangle(x, 14, wdt, Height - 28),
+                Bounds = new Rectangle(x, S(14), wdt, Height - S(28)),
                 Text = tekst,
                 BackColor = JohanTheme.Panel,
                 ForeColor = JohanTheme.Text,
@@ -66,42 +68,42 @@ namespace AgOpenGPS
 
         private void BuildLayout()
         {
-            int x = 14, gap = 10;
+            int x = S(14), gap = S(10);
             lblStatus = new Label
             {
-                Bounds = new Rectangle(x, 14, 330, Height - 28),
+                Bounds = new Rectangle(x, S(14), S(330), Height - S(28)),
                 Font = JohanTheme.Font(13F),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleLeft,
                 BackColor = Color.Transparent
             };
-            Controls.Add(lblStatus); x += 330 + gap;
+            Controls.Add(lblStatus); x += S(330) + gap;
 
-            btnKant = Knop(x, 170, "Rechterkant", "arrow-right_licht_64", () =>
+            btnKant = Knop(x, S(170), "Rechterkant", "arrow-right_licht_64", () =>
             {
                 mf.bnd.isDrawRightSide = !mf.bnd.isDrawRightSide;
-            }); x += 170 + gap;
+            }); x += S(170) + gap;
 
-            btnStart = Knop(x, 150, "Start", "player-record_licht_64", () =>
+            btnStart = Knop(x, S(150), "Start", "player-record_licht_64", () =>
             {
                 opnemen = !opnemen;
                 mf.bnd.isOkToAddPoints = opnemen;
-            }); x += 150 + gap;
+            }); x += S(150) + gap;
 
-            Knop(x, 150, "Opnieuw", "refresh_licht_64", () =>
+            Knop(x, S(150), "Opnieuw", "refresh_licht_64", () =>
             {
                 opnemen = false;
                 mf.bnd.isOkToAddPoints = false;
                 mf.bnd.bndBeingMadePts.Clear();
-            }); x += 150 + 2 * gap;
+            }); x += S(150) + 2 * gap;
 
-            Knop(x, 130, "Annuleer", "x_licht_64", () =>
+            Knop(x, S(130), "Annuleer", "x_licht_64", () =>
             {
                 Stop();
                 Close();
-            }); x += 130 + gap;
+            }); x += S(130) + gap;
 
-            btnKlaar = Knop(Width - 14 - 140, 140, "Klaar", "check_licht_64", Klaar);
+            btnKlaar = Knop(Width - S(14) - S(140), S(140), "Klaar", "check_licht_64", Klaar);
             btnKlaar.BackColor = JohanTheme.Green;
             btnKlaar.ForeColor = Color.White;
         }
