@@ -61,7 +61,7 @@ namespace AgOpenGPS
             panelLeft.VisibleChanged += (s, e) => LayoutJohan();
 
             johanTick = new Timer { Interval = 500 };
-            johanTick.Tick += (s, e) => { try { UpdateJohanBars(); } catch (Exception ex) { Log.EventWriter("Driver bars: " + ex.Message); } };
+            johanTick.Tick += (s, e) => { try { UpdateJohanBars(); JohanThemaKlok(); } catch (Exception ex) { Log.EventWriter("Driver bars: " + ex.Message); } };
             johanTick.Start();
 
             // LoadSettings ran before the bars existed; lay them out now
@@ -394,6 +394,18 @@ namespace AgOpenGPS
             btnJTerug.Click += (s, e) => { camera.PanX = 0; camera.PanY = 0; btnJTerug.Visible = false; };
             Controls.Add(btnJTerug);
             JohanGestures();
+        }
+
+        // Theme on the clock: light between 7 and 19 h, dark otherwise; checked every tick, switched live once
+        private int johanKlokMinuut = -1;
+        private void JohanThemaKlok()
+        {
+            if (!Settings.Default.setDisplay_johanThemaKlok) return;
+            int minuut = DateTime.Now.Hour * 60 + DateTime.Now.Minute;
+            if (minuut == johanKlokMinuut) return;
+            johanKlokMinuut = minuut;
+            bool licht = DateTime.Now.Hour >= 7 && DateTime.Now.Hour < 19;
+            if (licht != Settings.Default.setDisplay_isJohanLight && Application.OpenForms.Count <= 1) JohanThemeLive(licht);
         }
 
         // Pan the map by a number of screen pixels (one finger or a mouse drag); the button to come back appears

@@ -74,6 +74,7 @@ namespace AgOpenGPS.Properties
         public int setDisplay_johanCode = 2468;    // code for the protected chapters of the settings page
         public bool setDisplay_johanNoordBoven = false;   // 2D map pinned north up (compass button)
         public int setDisplay_johanKopakkerGangen = 2;    // what the headland bar proposes: this many working passes
+        public bool setDisplay_johanThemaKlok = false;        // theme follows the clock: light by day (7-19 h), dark at night
         public bool setDisplay_johanKopakkerPiep = true;      // beep when the tool crosses into the headland
         public double setDisplay_johanKopakkerPiepAfstand = 0;   // metres ahead of the tool at which the beep comes
         public bool setWindow_isShutdownComputer = false;

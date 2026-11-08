@@ -18,22 +18,24 @@ namespace AgOpenGPS
             // Theme: index 0 = dark, 1 = light. JohanThemeLive saves the setting and recolours
             // the running screens itself. This page only recolours its own background; the cards
             // and rows keep the old colours until the page is opened again, hence the message.
-            RijKeuze(k, "Thema", new[] { "Donker", "Licht" },
-                () => Settings.Default.setDisplay_isJohanLight ? 1 : 0,
+            RijKeuze(k, "Thema", new[] { "Donker", "Licht", "Op de klok" },
+                () => Settings.Default.setDisplay_johanThemaKlok ? 2 : Settings.Default.setDisplay_isJohanLight ? 1 : 0,
                 i =>
                 {
-                    bool licht = i == 1;
+                    // on the clock: light from 7 to 19 h, dark otherwise (DriverMode checks every tick)
+                    Settings.Default.setDisplay_johanThemaKlok = i == 2;
+                    bool licht = i == 2 ? (DateTime.Now.Hour >= 7 && DateTime.Now.Hour < 19) : i == 1;
+                    Toepassen();
                     if (licht == Settings.Default.setDisplay_isJohanLight)
                     {
                         return;
                     }
                     mf.JohanThemeLive(licht);
-                    Toepassen();
                     BackColor = JohanTheme.Bg;
                     ForeColor = JohanTheme.Text;
                     mf.TimedMessageBox(2500, "Scherm", "Het thema is gewisseld. Sluit en open de instellingen om alles in de nieuwe kleuren te zien.");
                 },
-                "Donker is rustiger in het donker, licht is beter te lezen in de zon.");
+                "Donker is rustiger in het donker, licht is beter te lezen in de zon; op de klok wisselt vanzelf om 7 en 19 uur.");
 
             // CSound reads the settings only in its constructor and LoadSettings does not reread them,
             // so the running flags in mf.sounds are set as well, the way ConfigData does.
