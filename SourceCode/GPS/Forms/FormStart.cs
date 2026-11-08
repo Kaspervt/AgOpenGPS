@@ -63,11 +63,9 @@ namespace AgOpenGPS
                 BackColor = panel,
                 SizeMode = PictureBoxSizeMode.Zoom
             };
-            string photoPath = Path.Combine(RegistrySettings.environmentDirectory, "startfoto.jpg");
-            if (File.Exists(photoPath))
-            {
-                try { photo.Image = Image.FromFile(photoPath); } catch { }
-            }
+            // Environment\startfotos\*.jpg|png: a different one each start, rotated as the camera meant it,
+            // cropped to fill the left half. Falls back to the single startfoto.jpg.
+            try { photo.Image = KiesStartfoto(leftW, h); } catch (Exception ex) { Log.EventWriter("Start photo: " + ex.Message); }
             Controls.Add(photo);
 
             var lblSub = new Label
@@ -95,7 +93,7 @@ namespace AgOpenGPS
             {
                 photo.Controls.Add(new Label
                 {
-                    Text = "Zet een foto als startfoto.jpg in de map Environment",
+                    Text = "Zet foto's in de map Environment, submap startfotos",
                     ForeColor = muted,
                     BackColor = Color.Transparent,
                     AutoSize = true,
@@ -175,6 +173,55 @@ namespace AgOpenGPS
             };
             lblBeheer.Location = new Point(w - 48 - 300, h - 64);
             Controls.Add(lblBeheer);
+        }
+
+        private static Image KiesStartfoto(int w, int h)
+        {
+            string dir = Path.Combine(RegistrySettings.environmentDirectory, "startfotos");
+            var files = Directory.Exists(dir)
+                ? Directory.GetFiles(dir).Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f).ToArray()
+                : new string[0];
+            string path;
+            if (files.Length == 0)
+            {
+                path = Path.Combine(RegistrySettings.environmentDirectory, "startfoto.jpg");
+                if (!File.Exists(path)) return null;
+            }
+            else
+            {
+                int i = Settings.Default.setDisplay_johanFotoIndex % files.Length;
+                Settings.Default.setDisplay_johanFotoIndex = (i + 1) % files.Length;   // next start: next photo
+                path = files[i];
+            }
+            using (var src = Image.FromFile(path))
+            {
+                // camera orientation (EXIF 0x0112), otherwise portrait photos lie on their side
+                try
+                {
+                    if (Array.IndexOf(src.PropertyIdList, 0x0112) >= 0)
+                    {
+                        int o = src.GetPropertyItem(0x0112).Value[0];
+                        if (o == 3) src.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                        else if (o == 6) src.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                        else if (o == 8) src.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    }
+                }
+                catch { }
+                // cover: scale to fill, crop what sticks out, centred
+                double sc = Math.Max((double)w / src.Width, (double)h / src.Height);
+                int sw = (int)(w / sc), sh = (int)(h / sc);
+                var srcRect = new Rectangle((src.Width - sw) / 2, (src.Height - sh) / 2, sw, sh);
+                var bmp = new Bitmap(w, h);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.DrawImage(src, new Rectangle(0, 0, w, h), srcRect, GraphicsUnit.Pixel);
+                    // dark fade at the bottom so the name stays readable
+                    using (var fade = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, h - 260, w, 260), Color.FromArgb(0, 15, 23, 42), Color.FromArgb(200, 15, 23, 42), 90f))
+                        g.FillRectangle(fade, new Rectangle(0, h - 260, w, 260));
+                }
+                return bmp;
+            }
         }
 
         private void UpdateStatus()

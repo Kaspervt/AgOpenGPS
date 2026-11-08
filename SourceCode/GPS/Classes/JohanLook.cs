@@ -12,11 +12,12 @@ namespace AgOpenGPS
     {
         public static bool On;
 
-        public static readonly ColorRgba Line = new ColorRgba(0.992f, 0.878f, 0.278f);          // #fde047
+        // Kasper koos 8-11 lijnstijl B: dun cyaan met donkere rand, buurlijnen cyaan, geen corridor
+        public static readonly ColorRgba Line = new ColorRgba(0.133f, 0.827f, 0.933f);          // #22d3ee
         public static readonly ColorRgba LineHalo = new ColorRgba(0.059f, 0.090f, 0.165f, 0.85f); // #0f172a
-        public static readonly ColorRgba Guide = new ColorRgba(1.0f, 1.0f, 1.0f, 0.30f);          // side guide lines
+        public static readonly ColorRgba Guide = new ColorRgba(0.133f, 0.827f, 0.933f, 0.30f);  // side guide lines, cyan 30%
         public static readonly ColorRgba Grid = new ColorRgba(0.33f, 0.37f, 0.31f);                // orientation grid: a shade lighter than the ground
-        public static readonly ColorRgba Corridor = new ColorRgba(0.992f, 0.878f, 0.278f, 0.18f); // soft band around the active line
+        public static readonly ColorRgba Corridor = new ColorRgba(0.133f, 0.827f, 0.933f, 0.0f);  // corridor off in style B (alpha 0 = not drawn)
         public static readonly ColorRgba SectionOn = new ColorRgba(0.133f, 0.773f, 0.369f);      // #22c55e
         public static readonly ColorRgba SectionOff = new ColorRgba(0.392f, 0.455f, 0.545f);     // #64748b
         public static readonly ColorRgba SectionWait = new ColorRgba(0.961f, 0.620f, 0.043f);    // amber: on, not mapping yet

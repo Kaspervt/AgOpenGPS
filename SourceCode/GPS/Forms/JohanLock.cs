@@ -47,6 +47,7 @@ namespace AgOpenGPS
             s.setDisplay_colorFieldDay = JohanTheme.FieldGround;
             s.setMenu_isGridOn = true;    // faint grid for orientation on the flat ground
             s.setMenu_isSideGuideLines = true;   // neighbouring lines a tool width apart
+            s.setDisplay_lineWidth = 3;          // style B: 3 px core, dark edge
             if (s.setAS_numGuideLines > 4) s.setAS_numGuideLines = 3;
             JohanLook.Symbol = s.setDisplay_johanSymbool;
             s.setDisplay_isTextureOn = false;                                   // flat ground, no grain

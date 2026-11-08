@@ -421,7 +421,7 @@ namespace AgOpenGPS
             GeoCoord[] currentAbLine = { currentLinePtA.ToGeoCoord(), currentLinePtB.ToGeoCoord() };
             LineStyle blackBackgroundStyle = new LineStyle(lineWidth * 3, JohanLook.On ? JohanLook.LineHalo : Colors.Black);
             LineStyle purpleForgroundStyle = new LineStyle(lineWidth, JohanLook.On ? JohanLook.Line : currentAbLinePurple);
-            if (JohanLook.On)
+            if (JohanLook.On && JohanLook.Corridor.Alpha > 0)
             {
                 // soft corridor around the active line, as in the canvas
                 GLW.SetLineWidth(Math.Min(14f, lineWidth * 5f));
