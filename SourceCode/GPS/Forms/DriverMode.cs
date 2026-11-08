@@ -27,7 +27,7 @@ namespace AgOpenGPS
         private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto, btnJLuchtfoto, btnJThema;
         private Label lblJLijn, lblJSpeed;
         private JohanPill lblJRtk, lblJTrekker, lblJBewerkt, lblJAfstand;
-        private JohanRoundButton btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, btnJTerug;
+        private JohanRoundButton btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, btnJTerug, btnJNoord;
         private JohanPill lblJMeet;
         // measuring tape: point A and whether it is running (drawn in OpenGL.Designer.cs)
         public bool johanMeetActief;
@@ -225,7 +225,7 @@ namespace AgOpenGPS
         public void RebuildJohanBars()
         {
             if (panelJohanTop == null) return;
-            foreach (Control c in new Control[] { panelJohanTop, panelJohanBottom, lblJBewerkt, lblJAfstand, btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, lblJMeet, btnJTerug })
+            foreach (Control c in new Control[] { panelJohanTop, panelJohanBottom, lblJBewerkt, lblJAfstand, btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, lblJMeet, btnJTerug, btnJNoord })
             {
                 if (c == null) continue;
                 Controls.Remove(c);
@@ -348,11 +348,10 @@ namespace AgOpenGPS
             btnJ3D.BackColor = JohanTheme.Bg; btnJ3D.Radius = S(12); btnJ3D.Visible = false; btnJ3D.Corner = JohanTheme.FieldGround;
             btnJ3D.Click += (s, e) =>
             {
-                // cycle: 2D (flat) -> 3D schuin (45) -> 3D steil (65) -> 2D; any angle in between by dragging
-                double p = camera.PitchInDegrees;
-                double volgende = p > -20 ? -45 : p > -55 ? -65 : 0;
+                // one switch: 2D from above <-> 3D behind the tractor (two fingers tilt further)
+                double volgende = camera.PitchInDegrees > -20 ? -55 : 0;
                 JohanZetHoek(volgende);
-                TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : volgende == -45 ? "3D, schuin (sleep op de kaart voor een andere hoek)" : "3D, steil");
+                TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : "3D, achter de trekker");
             };
             Controls.Add(btnJ3D);
 
@@ -372,6 +371,20 @@ namespace AgOpenGPS
                 UpdateJohanBars();
             };
             Controls.Add(btnJMeet);
+
+            // compass: pin the 2D map north up (off = the map turns with the tractor)
+            btnJNoord = (JohanRoundButton)JohanButton("", "compass_licht_64", 28, 10F, false);
+            btnJNoord.Radius = S(12); btnJNoord.Visible = false; btnJNoord.Corner = JohanTheme.FieldGround;
+            btnJNoord.BackColor = Settings.Default.setDisplay_johanNoordBoven ? JohanTheme.Blue : JohanTheme.Bg;
+            btnJNoord.Click += (s, e) =>
+            {
+                Settings.Default.setDisplay_johanNoordBoven = !Settings.Default.setDisplay_johanNoordBoven;
+                Settings.Default.Save();
+                btnJNoord.BackColor = Settings.Default.setDisplay_johanNoordBoven ? JohanTheme.Blue : JohanTheme.Bg;
+                JohanZetHoek(camera.PitchInDegrees);
+                TimedMessageBox(1200, "Weergave", Settings.Default.setDisplay_johanNoordBoven ? "Noorden boven" : "Rijrichting boven");
+            };
+            Controls.Add(btnJNoord);
             lblJMeet = new JohanPill { Font = JohanTheme.Font(16F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Corner = JohanTheme.FieldGround, Visible = false, Dot = JohanTheme.Amber };
             Controls.Add(lblJMeet);
 
@@ -398,9 +411,11 @@ namespace AgOpenGPS
         {
             pitch = Math.Max(-70, Math.Min(0, pitch));
             if (pitch > -4) pitch = 0;
-            camera.FollowDirectionHint = true;
+            // 3D always follows the driving direction; 2D can be pinned north up (compass button)
+            camera.FollowDirectionHint = pitch < -4 || !Settings.Default.setDisplay_johanNoordBoven;
             camera.PitchInDegrees = pitch;
             if (btnJ3D != null) btnJ3D.Image = JohanSkin.Icon(pitch > -20 ? "cube_licht_64" : "map-2_licht_64", 28);
+            if (btnJNoord != null) btnJNoord.Visible = JohanSchermActief && pitch > -4;
             SetZoom();
         }
 
@@ -563,6 +578,7 @@ namespace AgOpenGPS
                 btnJZoomUit.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + z + z10, z, z);
                 btnJ3D.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 2 * (z + z10) + g12, z, z);
                 btnJMeet.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 3 * (z + z10) + 2 * g12, z, z);
+                btnJNoord.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 4 * (z + z10) + 2 * g12, z, z);
                 lblJMeet.Bounds = new Rectangle((w - S(420)) / 2, JohanTopH + m20 + z + z10, S(420), S(48));
                 btnJTerug.Bounds = new Rectangle((w - S(260)) / 2, h - JohanBottomH - g16 - S(48), S(260), S(48));
 
@@ -588,6 +604,8 @@ namespace AgOpenGPS
                 btnJZoomUit.Visible = true;
                 btnJ3D.Visible = true;
                 btnJMeet.Visible = true;
+                btnJNoord.Visible = camera.PitchInDegrees > -4;
+                camera.FollowDirectionHint = camera.PitchInDegrees < -4 || !Settings.Default.setDisplay_johanNoordBoven;
                 panelJohanTop.BringToFront();
                 panelJohanBottom.BringToFront();
                 lblJBewerkt.BringToFront();
@@ -596,6 +614,7 @@ namespace AgOpenGPS
                 btnJZoomUit.BringToFront();
                 btnJ3D.BringToFront();
                 btnJMeet.BringToFront();
+                btnJNoord.BringToFront();
                 lblJMeet.BringToFront();
                 btnJTerug.BringToFront();
             }
@@ -613,6 +632,7 @@ namespace AgOpenGPS
             btnJZoomUit.Visible = false;
             btnJ3D.Visible = false;
             btnJMeet.Visible = false;
+            btnJNoord.Visible = false;
             lblJMeet.Visible = false;
             btnJTerug.Visible = false;
             menuStrip1.Visible = true;
