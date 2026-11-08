@@ -28,6 +28,8 @@ namespace AgOpenGPS
             s.setDisplay_isDriverMode = true;
             s.setDisplay_isStartScreen = true;
             s.setDisplay_isJohanIcons = true;
+            // tablet without a keyboard: the on-screen keyboard comes up for every text field
+            s.setDisplay_isKeyboardOn = true;
             // Johan turns himself: no U-turn and sideways-skip arrows on the map
             var f = s.setFeatures; f.isUTurnOn = false; f.isLateralOn = false; f.isYouTurnOn = false; s.setFeatures = f;
             Log.EventWriter("Johan lock: driver setup enforced (" + LockPath + ")");

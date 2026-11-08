@@ -34,6 +34,38 @@ namespace AgOpenGPS
         public static readonly ColorRgba Vehicle = new ColorRgba(0.114f, 0.306f, 0.847f);        // #1d4ed8
         public static readonly ColorRgba VehicleEdge = new ColorRgba(0.973f, 0.980f, 0.988f);    // #f8fafc
 
+        // ---------------------------------------------------------------- measuring tape
+
+        // Point A as a ring, a dashed line from A to the tractor (straight-line distance shown in the pill)
+        public static void DrawMeet(vec3 a, vec3 pos, double zoom)
+        {
+            double r = Math.Max(0.6, zoom * 0.06);
+            GL.PushMatrix();
+            GL.Translate(0, 0, 0.02);
+            GL.LineWidth(4);
+            GL.Enable(EnableCap.LineStipple);
+            GL.LineStipple(3, 0x0F0F);
+            GL.Color4(0.961f, 0.620f, 0.043f, 0.95f);
+            GL.Begin(PrimitiveType.Lines);
+            GL.Vertex3(a.easting, a.northing, 0);
+            GL.Vertex3(pos.easting, pos.northing, 0);
+            GL.End();
+            GL.Disable(EnableCap.LineStipple);
+            GL.LineWidth(3);
+            GL.Begin(PrimitiveType.LineLoop);
+            for (int i = 0; i < 24; i++)
+            {
+                double t = i * Math.PI * 2 / 24;
+                GL.Vertex3(a.easting + Math.Cos(t) * r, a.northing + Math.Sin(t) * r, 0);
+            }
+            GL.End();
+            GL.PointSize(8);
+            GL.Begin(PrimitiveType.Points);
+            GL.Vertex3(a.easting, a.northing, 0);
+            GL.End();
+            GL.PopMatrix();
+        }
+
         // ---------------------------------------------------------------- ground
 
         // Diagonal bands over the whole ground, a shade lighter than the ground colour (the canvas

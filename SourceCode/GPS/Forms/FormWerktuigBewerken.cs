@@ -70,8 +70,9 @@ namespace AgOpenGPS
         private static string Komma(double v, string f) => v.ToString(f).Replace('.', ',');
 
         // A number through the AgOpenGPS keypad, with a title that says what is being entered
+        private Control laatsteVeld;
         private double Vraag(string titel, string eenheid, double min, double max, double nu)
-            => FormGetal.Vraag(this, titel, eenheid, min, max, nu, eenheid == "m" ? 2 : 0);
+            => FormGetal.Vraag(this, titel, eenheid, min, max, nu, eenheid == "m" ? 2 : 0, laatsteVeld);
 
         private Button Rij(int y, string label, string eenheid, Func<string> waarde, Action tik, string uitleg = null)
         {
@@ -89,7 +90,7 @@ namespace AgOpenGPS
                 Text = waarde()
             };
             b.FlatAppearance.BorderSize = 0;
-            b.Click += (s, e) => { tik(); b.Text = waarde(); };
+            b.Click += (s, e) => { laatsteVeld = b; tik(); b.Text = waarde(); };
             Controls.Add(b);
             Controls.Add(new Label { Text = eenheid, Font = JohanTheme.Font(13F), ForeColor = JohanTheme.Muted, AutoSize = false, Bounds = new Rectangle(x + S(690), y, S(90), S(64)), TextAlign = ContentAlignment.MiddleLeft });
             return b;
@@ -143,6 +144,7 @@ namespace AgOpenGPS
             btnAfstand.FlatAppearance.BorderSize = 0;
             btnAfstand.Click += (s, e) =>
             {
+                laatsteVeld = btnAfstand;
                 if (aanbouw == 0) trekhaak = Vraag("Trekhaak tot het werktuig", "m", 0.1, 20, trekhaak);
                 else hef = Vraag("Achteras tot het werktuig", "m", 0.0, 10, hef);
                 ZetAanbouw();

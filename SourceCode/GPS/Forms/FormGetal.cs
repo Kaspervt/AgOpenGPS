@@ -22,11 +22,43 @@ namespace AgOpenGPS
 
         private static int S(int px) => JohanTheme.S(px);
 
-        public static double Vraag(IWin32Window owner, string titel, string eenheid, double min, double max, double nu, int decimalen = 2)
+        // veld: the control being edited. When it would disappear under the bar, the page is shifted up
+        // for as long as the bar is open (like a keyboard pushing a page up), then put back.
+        public static double Vraag(IWin32Window owner, string titel, string eenheid, double min, double max, double nu, int decimalen = 2, Control veld = null)
         {
             using (var f = new FormGetal(titel, eenheid, min, max, nu, decimalen))
             {
-                return f.ShowDialog(owner) == DialogResult.OK ? f.Waarde : nu;
+                var pagina = veld?.FindForm();
+                int schuif = 0;
+                if (pagina != null)
+                {
+                    try
+                    {
+                        var r = veld.RectangleToScreen(veld.ClientRectangle);
+                        int grens = f.Top - S(16);
+                        if (r.Bottom > grens) schuif = r.Bottom - grens;
+                    }
+                    catch { schuif = 0; }
+                }
+                if (schuif > 0)
+                {
+                    pagina.SuspendLayout();
+                    foreach (Control c in pagina.Controls) c.Top -= schuif;
+                    pagina.ResumeLayout();
+                }
+                try
+                {
+                    return f.ShowDialog(owner) == DialogResult.OK ? f.Waarde : nu;
+                }
+                finally
+                {
+                    if (schuif > 0)
+                    {
+                        pagina.SuspendLayout();
+                        foreach (Control c in pagina.Controls) c.Top += schuif;
+                        pagina.ResumeLayout();
+                    }
+                }
             }
         }
 

@@ -6,9 +6,10 @@ using System.Windows.Forms;
 
 namespace AgOpenGPS
 {
-    // Johan fork: the lines of the field as one bar above the bottom buttons, the current one green.
-    // Opened by "Andere lijn" (which also steps to the next line, so a quick tap keeps working);
-    // a tap on a name selects it, the bar closes itself after a few seconds without a tap.
+    // Johan fork: the lines of the field as a list along the right side of the map, the current one
+    // green, with the real names from the field. Opened by "Andere lijn" (which also steps to the
+    // next line, so a quick tap keeps working); a tap on a name selects it, the list closes itself
+    // after a few seconds without a tap.
     public class FormLijnKeuze : Form
     {
         private readonly FormGPS mf;
@@ -31,9 +32,10 @@ namespace AgOpenGPS
             ShowInTaskbar = false;
             TopMost = false;
 
+            // a drawer between the top and bottom bar, right of the zoom buttons
             var scr = Screen.FromControl(mf).Bounds;
-            int h = S(96), w = Math.Min(S(1310), scr.Width - S(32));
-            Bounds = new Rectangle(scr.Left + (scr.Width - w) / 2, scr.Bottom - S(132) - S(12) - h, w, h);
+            int w = S(360), top = scr.Top + S(68) + S(12), h = scr.Bottom - S(132) - S(12) - top;
+            Bounds = new Rectangle(scr.Right - S(96) - w, top, w, h);
             BuildLayout();
 
             tick.Tick += (s, e) => { Highlight(); if (++stil >= 16) Close(); };   // 8 s without a tap
@@ -44,39 +46,42 @@ namespace AgOpenGPS
         private void BuildLayout()
         {
             for (int i = 0; i < mf.trk.gArr.Count; i++) if (mf.trk.gArr[i].isVisible) idx.Add(i);
-            int pad = S(14), gap = S(10), klaarW = S(96);
-            int beschikbaar = Width - 2 * pad - klaarW - gap;
-            int n = Math.Max(1, idx.Count);
-            int bw = Math.Min(S(260), (beschikbaar - (n - 1) * gap) / n);
-            int x = pad;
+            int pad = S(14), gap = S(10), bh = S(64);
+            Controls.Add(new Label { Text = "Welke lijn?", Font = JohanTheme.Font(15F, FontStyle.Bold), AutoSize = false, Bounds = new Rectangle(pad, pad, Width - 2 * pad, S(34)), TextAlign = ContentAlignment.MiddleLeft });
+
+            var lijst = new Panel { Bounds = new Rectangle(pad, pad + S(44), Width - 2 * pad, Height - pad - S(44) - S(14) - bh - gap), AutoScroll = true, BackColor = JohanTheme.Bar };
+            lijst.MouseDown += (s, e) => stil = 0;
+            Controls.Add(lijst);
+            int y = 0;
             foreach (int i in idx)
             {
                 int t = i;
                 var b = new JohanRoundButton
                 {
-                    Bounds = new Rectangle(x, S(14), bw, Height - S(28)),
+                    Bounds = new Rectangle(0, y, lijst.Width - S(20), bh),
                     Text = mf.trk.gArr[i].name,
                     BackColor = JohanTheme.Panel,
                     ForeColor = JohanTheme.Text,
                     FlatStyle = FlatStyle.Flat,
-                    Font = JohanTheme.Font(12F, FontStyle.Bold),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    Font = JohanTheme.Font(13F, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding = new Padding(S(10), 0, 0, 0)
                 };
                 b.FlatAppearance.BorderSize = 0;
-                b.MouseDown += (s, e) => stil = 0;   // keep the bar open while the finger is on it
+                b.MouseDown += (s, e) => stil = 0;
                 b.Click += (s, e) => { mf.JohanKiesLijn(t); stil = 0; Highlight(); mf.Activate(); };
-                Controls.Add(b);
+                lijst.Controls.Add(b);
                 knoppen.Add(b);
-                x += bw + gap;
+                y += bh + gap;
             }
             var klaar = new JohanRoundButton
             {
-                Bounds = new Rectangle(Width - pad - klaarW, S(14), klaarW, Height - S(28)),
+                Bounds = new Rectangle(pad, Height - S(14) - bh, Width - 2 * pad, bh),
                 Text = "Klaar",
                 BackColor = JohanTheme.Green,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = JohanTheme.Font(11F, FontStyle.Bold),
+                Font = JohanTheme.Font(13F, FontStyle.Bold),
                 Image = JohanSkin.Icon("check_licht_64", 26),
                 TextImageRelation = TextImageRelation.ImageBeforeText
             };
@@ -86,7 +91,7 @@ namespace AgOpenGPS
             Controls.Add(klaar);
         }
 
-        // Called by the bar itself and by "Andere lijn" after a cycle step
+        // Called by the list itself and by "Andere lijn" after a cycle step
         public void Highlight()
         {
             stil = Math.Min(stil, 15);

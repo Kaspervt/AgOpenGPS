@@ -27,7 +27,11 @@ namespace AgOpenGPS
         private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto, btnJLuchtfoto, btnJThema;
         private Label lblJLijn, lblJSpeed;
         private JohanPill lblJRtk, lblJTrekker, lblJBewerkt, lblJAfstand;
-        private JohanRoundButton btnJZoomIn, btnJZoomUit, btnJ3D;
+        private JohanRoundButton btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, btnJTerug;
+        private JohanPill lblJMeet;
+        // measuring tape: point A and whether it is running (drawn in OpenGL.Designer.cs)
+        public bool johanMeetActief;
+        public vec3 johanMeetA;
         private Button btnJInstellingen, btnJUit;
         private Timer johanTick;
         private Control[] johanSectionButtons;
@@ -221,7 +225,7 @@ namespace AgOpenGPS
         public void RebuildJohanBars()
         {
             if (panelJohanTop == null) return;
-            foreach (Control c in new Control[] { panelJohanTop, panelJohanBottom, lblJBewerkt, lblJAfstand, btnJZoomIn, btnJZoomUit, btnJ3D })
+            foreach (Control c in new Control[] { panelJohanTop, panelJohanBottom, lblJBewerkt, lblJAfstand, btnJZoomIn, btnJZoomUit, btnJ3D, btnJMeet, lblJMeet, btnJTerug })
             {
                 if (c == null) continue;
                 Controls.Remove(c);
@@ -273,7 +277,8 @@ namespace AgOpenGPS
 
             // settings in plain sight (the long press on the speed still works too)
             btnJInstellingen = JohanButton("", "settings_licht_64", 24, 10F, false);
-            btnJInstellingen.Click += (s, e) => { using (var f = new FormBeheer(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
+            // gear = the settings page; Beheer stays behind the long press on the speed and under Onderhoud
+            btnJInstellingen.Click += (s, e) => { using (var f = new FormInstellingen(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
 
             // off: the same question as in Beheer and on the start screen
             btnJUit = JohanButton("", "power_licht_64", 24, 10F, false);
@@ -350,7 +355,42 @@ namespace AgOpenGPS
                 TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : volgende == -45 ? "3D, schuin (sleep op de kaart voor een andere hoek)" : "3D, steil");
             };
             Controls.Add(btnJ3D);
+
+            // measuring tape: tap = point A here, the pill shows the straight-line distance; tap again = stop
+            btnJMeet = (JohanRoundButton)JohanButton("", "ruler-2_licht_64", 28, 10F, false);
+            btnJMeet.BackColor = JohanTheme.Bg; btnJMeet.Radius = S(12); btnJMeet.Visible = false; btnJMeet.Corner = JohanTheme.FieldGround;
+            btnJMeet.Click += (s, e) =>
+            {
+                if (!johanMeetActief)
+                {
+                    johanMeetA = pivotAxlePos;
+                    johanMeetActief = true;
+                    TimedMessageBox(1500, "Meten", "Punt A staat hier; rij weg en lees de afstand af");
+                }
+                else johanMeetActief = false;
+                btnJMeet.BackColor = johanMeetActief ? JohanTheme.Amber : JohanTheme.Bg;
+                UpdateJohanBars();
+            };
+            Controls.Add(btnJMeet);
+            lblJMeet = new JohanPill { Font = JohanTheme.Font(16F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Corner = JohanTheme.FieldGround, Visible = false, Dot = JohanTheme.Amber };
+            Controls.Add(lblJMeet);
+
+            // back to the tractor after panning the map
+            btnJTerug = (JohanRoundButton)JohanButton("Naar de trekker", "navigation_licht_64", 24, 11F, false);
+            btnJTerug.BackColor = JohanTheme.Blue; btnJTerug.ForeColor = Color.White; btnJTerug.Radius = S(12); btnJTerug.Visible = false; btnJTerug.Corner = JohanTheme.FieldGround;
+            btnJTerug.Click += (s, e) => { camera.PanX = 0; camera.PanY = 0; btnJTerug.Visible = false; };
+            Controls.Add(btnJTerug);
             JohanGestures();
+        }
+
+        // Pan the map by a number of screen pixels (one finger or a mouse drag); the button to come back appears
+        public void JohanPan(int dx, int dy)
+        {
+            if (dx == 0 && dy == 0) return;
+            double perPixel = 2.0 * camera.DistanceToLookAt * Math.Tan(fovy * 0.5) / Math.Max(1, oglMain.Height);
+            camera.PanX += dx * perPixel;
+            camera.PanY -= dy * perPixel;
+            if (btnJTerug != null && !btnJTerug.Visible && JohanSchermActief) { btnJTerug.Visible = true; btnJTerug.BringToFront(); }
         }
 
         // Camera tilt: 0 is straight down, -75 almost along the ground. Icon follows: cube = go 3D, map = back to 2D.
@@ -370,7 +410,7 @@ namespace AgOpenGPS
         // Tilt by dragging on the map: two fingers on a touch screen (WM_GESTURE pan with a finger distance),
         // or a plain mouse drag on a laptop. A pinch zooms. Taps keep working as before.
         private JohanGestureWindow johanGest;
-        private int johanDragY = -1;
+        private int johanDragX, johanDragY = -1;
         private bool johanDragging;
         private void JohanGestures()
         {
@@ -379,15 +419,17 @@ namespace AgOpenGPS
             if (oglMain.IsHandleCreated) johanGest.AssignHandle(oglMain.Handle);
             oglMain.HandleCreated += (s, e) => johanGest.AssignHandle(oglMain.Handle);
             oglMain.HandleDestroyed += (s, e) => johanGest.ReleaseHandle();
-            oglMain.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { johanDragY = e.Y; johanDragging = false; } };
+            oglMain.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { johanDragX = e.X; johanDragY = e.Y; johanDragging = false; } };
             oglMain.MouseUp += (s, e) => johanDragY = -1;
             oglMain.MouseMove += (s, e) =>
             {
                 if (e.Button != MouseButtons.Left || johanDragY < 0 || !JohanSchermActief) return;
-                int dy = e.Y - johanDragY;
-                if (!johanDragging && Math.Abs(dy) < S(12)) return;
+                int dx = e.X - johanDragX, dy = e.Y - johanDragY;
+                if (!johanDragging && Math.Abs(dx) + Math.Abs(dy) < S(12)) return;
                 johanDragging = true;
-                JohanZetHoek(camera.PitchInDegrees + dy * 0.25);   // drag up = tilt further
+                // a mouse drag pans the map (one finger on the tablet does the same); tilt: 3D button or two fingers
+                JohanPan(dx, dy);
+                johanDragX = e.X;
                 johanDragY = e.Y;
             };
         }
@@ -520,6 +562,9 @@ namespace AgOpenGPS
                 btnJZoomIn.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20, z, z);
                 btnJZoomUit.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + z + z10, z, z);
                 btnJ3D.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 2 * (z + z10) + g12, z, z);
+                btnJMeet.Bounds = new Rectangle(w - m20 - z, JohanTopH + m20 + 3 * (z + z10) + 2 * g12, z, z);
+                lblJMeet.Bounds = new Rectangle((w - S(420)) / 2, JohanTopH + m20 + z + z10, S(420), S(48));
+                btnJTerug.Bounds = new Rectangle((w - S(260)) / 2, h - JohanBottomH - g16 - S(48), S(260), S(48));
 
                 // original chrome away
                 panelLeft.Visible = false;
@@ -542,6 +587,7 @@ namespace AgOpenGPS
                 btnJZoomIn.Visible = true;
                 btnJZoomUit.Visible = true;
                 btnJ3D.Visible = true;
+                btnJMeet.Visible = true;
                 panelJohanTop.BringToFront();
                 panelJohanBottom.BringToFront();
                 lblJBewerkt.BringToFront();
@@ -549,6 +595,9 @@ namespace AgOpenGPS
                 btnJZoomIn.BringToFront();
                 btnJZoomUit.BringToFront();
                 btnJ3D.BringToFront();
+                btnJMeet.BringToFront();
+                lblJMeet.BringToFront();
+                btnJTerug.BringToFront();
             }
             finally { johanLayoutBusy = false; }
         }
@@ -563,6 +612,9 @@ namespace AgOpenGPS
             btnJZoomIn.Visible = false;
             btnJZoomUit.Visible = false;
             btnJ3D.Visible = false;
+            btnJMeet.Visible = false;
+            lblJMeet.Visible = false;
+            btnJTerug.Visible = false;
             menuStrip1.Visible = true;
             panelControlBox.Visible = true;
             panelLeft.Visible = true;
@@ -636,6 +688,16 @@ namespace AgOpenGPS
                 if (lblJAfstand.Text != afst) lblJAfstand.Text = afst;
             }
             if (lblJAfstand.Visible != lijnActief) lblJAfstand.Visible = lijnActief;
+
+            // measuring tape: straight-line distance from point A to the tractor
+            if (johanMeetActief)
+            {
+                double m = glm.Distance(johanMeetA, pivotAxlePos);
+                string t = "Afstand tot punt A: " + (m < 100 ? m.ToString("0.0") : m.ToString("0")).Replace('.', ',') + " m";
+                if (lblJMeet.Text != t) lblJMeet.Text = t;
+                if (!lblJMeet.Visible) { lblJMeet.Visible = true; lblJMeet.BringToFront(); }
+            }
+            else if (lblJMeet.Visible) lblJMeet.Visible = false;
 
             lblJSpeed.Text = SpeedKPH.Replace('.', ',') + " km/u";
 

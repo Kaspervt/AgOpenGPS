@@ -32,7 +32,7 @@ namespace AgOpenGPS
         [DllImport("user32.dll")] private static extern bool CloseGestureInfoHandle(IntPtr hGestureInfo);
 
         private readonly FormGPS mf;
-        private int lastY;
+        private int lastX, lastY;
         private ulong lastZoom;
 
         public JohanGestureWindow(FormGPS formGPS) { mf = formGPS; }
@@ -48,8 +48,11 @@ namespace AgOpenGPS
                     uint dist = (uint)(gi.ullArguments & 0xFFFFFFFF);
                     if (gi.dwID == GID_PAN)
                     {
-                        // dist > 0: two fingers. Drag up = tilt further, drag down = back towards 2D.
+                        // dist > 0: two fingers, drag up = tilt further, drag down = back towards 2D.
+                        // dist == 0: one finger, the map pans with the finger.
                         if (!begin && dist > 0) mf.JohanZetHoek(mf.camera.PitchInDegrees + (gi.y - lastY) * 0.25);
+                        else if (!begin) mf.JohanPan(gi.x - lastX, gi.y - lastY);
+                        lastX = gi.x;
                         lastY = gi.y;
                         CloseGestureInfoHandle(m.LParam);
                         m.Result = IntPtr.Zero;

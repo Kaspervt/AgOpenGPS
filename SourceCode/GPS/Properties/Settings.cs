@@ -71,6 +71,7 @@ namespace AgOpenGPS.Properties
         public bool setDisplay_isJohanLight = false;
         public int setDisplay_johanSymbool = 0;   // 0 arrow, 1 dot, 2 tractor
         public int setDisplay_johanFotoIndex = 0;  // which start photo comes next
+        public int setDisplay_johanCode = 2468;    // code for the protected chapters of the settings page
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

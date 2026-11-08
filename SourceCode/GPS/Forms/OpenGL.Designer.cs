@@ -399,6 +399,9 @@ namespace AgOpenGPS
                         }
                     }
 
+                    // Johan fork: measuring tape from point A to the tractor
+                    if (JohanLook.On && johanMeetActief) JohanLook.DrawMeet(johanMeetA, pivotAxlePos, camera.ZoomValue);
+
                     #endregion
 
                     #region Guidance Lines

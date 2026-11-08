@@ -13,9 +13,16 @@ namespace AgOpenGPS
     {
         private readonly FormGPS mf;
         private readonly Timer tick = new Timer { Interval = 500 };
-        private Label lblBreedte;
+        private Label lblBreedte, lblGangen;
         private Button btnAan, btnSecties;
         private double breedte;
+
+        // how many working passes the current width is (rounded)
+        private int Gangen()
+        {
+            double werk = Math.Max(0.5, mf.tool.width - mf.tool.overlap);
+            return Math.Max(1, (int)Math.Round(breedte / werk));
+        }
 
         private static int S(int px) => JohanTheme.S(px);
 
@@ -78,20 +85,35 @@ namespace AgOpenGPS
             int x = S(14), gap = S(10);
             double werk = Math.Max(0.5, mf.tool.width - mf.tool.overlap);
 
-            Knop(x, S(96), "0,5 m", "chevron-left_licht_64", () => Bouw(breedte - 0.5)); x += S(96) + gap;
+            // width: minus, the value (tap = keypad), plus
+            Knop(x, S(72), "", "chevron-left_licht_64", () => Bouw(breedte - 0.5)); x += S(72) + gap;
             lblBreedte = new Label
             {
                 Bounds = new Rectangle(x, S(14), S(150), Height - S(28)),
                 Font = JohanTheme.Font(18F, FontStyle.Bold),
                 ForeColor = JohanTheme.Text,
                 TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Cursor = Cursors.Hand
             };
+            lblBreedte.Click += (s, e) => { Bouw(FormGetal.Vraag(this, "Kopakkerbreedte", "m", 0.5, 60, breedte, 1, lblBreedte)); UpdateLabel(); mf.Activate(); };
             Controls.Add(lblBreedte); x += S(150) + gap;
-            Knop(x, S(96), "0,5 m", "chevron-right_licht_64", () => Bouw(breedte + 0.5)); x += S(96) + 2 * gap;
+            Knop(x, S(72), "", "chevron-right_licht_64", () => Bouw(breedte + 0.5)); x += S(72) + 2 * gap;
 
-            Knop(x, S(150), "1 werkgang", "kopakker_licht_64", () => Bouw(werk)); x += S(150) + gap;
-            Knop(x, S(160), "2 werkgangen", "kopakker_licht_64", () => Bouw(2 * werk)); x += S(160) + 2 * gap;
+            // working passes: minus, the count (tap = keypad), plus; the width follows the tool width
+            Knop(x, S(56), "−", null, () => Bouw(Math.Max(1, Gangen() - 1) * werk)); x += S(56) + gap;
+            lblGangen = new Label
+            {
+                Bounds = new Rectangle(x, S(14), S(170), Height - S(28)),
+                Font = JohanTheme.Font(13F, FontStyle.Bold),
+                ForeColor = JohanTheme.Text,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent,
+                Cursor = Cursors.Hand
+            };
+            lblGangen.Click += (s, e) => { Bouw(FormGetal.Vraag(this, "Aantal werkgangen op de kopakker", "", 1, 20, Gangen(), 0, lblGangen) * werk); UpdateLabel(); mf.Activate(); };
+            Controls.Add(lblGangen); x += S(170) + gap;
+            Knop(x, S(56), "+", null, () => Bouw((Gangen() + 1) * werk)); x += S(56) + 2 * gap;
 
             btnAan = Knop(x, S(96), "Aan", "check_licht_64", () =>
             {
@@ -115,6 +137,13 @@ namespace AgOpenGPS
         private void UpdateLabel()
         {
             lblBreedte.Text = Heeft ? breedte.ToString("0.0").Replace('.', ',') + " m" : "geen";
+            if (lblGangen != null)
+            {
+                int n = Gangen();
+                double werk = Math.Max(0.5, mf.tool.width - mf.tool.overlap);
+                bool precies = Math.Abs(n * werk - breedte) < 0.05;
+                lblGangen.Text = (precies ? "" : "≈ ") + n + (n == 1 ? " werkgang" : " werkgangen");
+            }
             if (btnAan != null)
             {
                 bool aan = Heeft && mf.bnd.isHeadlandOn;
