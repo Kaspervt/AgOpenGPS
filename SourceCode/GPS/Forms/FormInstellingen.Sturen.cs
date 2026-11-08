@@ -152,29 +152,17 @@ namespace AgOpenGPS
                 v => { VehicleSettings.Default.setAS_sideHillComp = v; Toepassen(); },
                 0, 1.0, 0.05, 2, "Extra stuurhoek per graad zijhelling; 0 is uit");
 
-            // Steer enable source lives in setArdSteer_setting0 (bits 32 = switch, 64 = button) and
-            // goes to the board with PGN 251, so it is only shown here; changing it is done in FormSteer
-            RijStatus(k, "Autosturen inschakelen met",
-                () => JohanTheme.Blue,
-                () =>
+            // Live test and the board wiring (sensor, motor driver, inversions, how autosteer is switched on):
+            // our own page, it sends PGN 251 the way FormSteer did
+            Action stuurtestOpenen = () =>
+            {
+                using (var f = new FormStuurtest(mf))
                 {
-                    int sett = VehicleSettings.Default.setArdSteer_setting0;
-                    if ((sett & 32) == 32)
-                    {
-                        return "Schakelaar";
-                    }
-                    if ((sett & 64) == 64)
-                    {
-                        return "Knop";
-                    }
-                    return "Geen (alleen op het scherm)";
-                },
-                "Knop of schakelaar op de stuurprint; wijzigen in het autostuur-venster",
-                ("Wijzigen", () => mf.BeheerOpenSteer()));
-
-            // Motor driver, A2D, inversions, Danfoss, sensor: PGN 251, original window only
-            RijKnoppen(k, "Motor en bedrading", "Motor driver, A2D, omkeren, Danfoss, draaisensor; alleen bij het inrichten",
-                ("Autostuur-venster", () => mf.BeheerOpenSteer()));
+                    f.ShowDialog(this);
+                }
+            };
+            RijKnoppen(k, "Stuurtest en bedrading", "Wielhoek live, vrij sturen, nulstellen, stuurhoek meten, en hoe de print is aangesloten",
+                ("Openen", stuurtestOpenen));
 
             // Guided measurement of all steer values, same window FormSteer opens
             Action wizardStarten = () =>

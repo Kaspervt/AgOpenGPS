@@ -55,7 +55,6 @@ namespace AgOpenGPS
             // The original AgOpenGPS windows, full screen, for everything this page does not cover
             RijKnoppen(k, "Originele vensters", "Beeldvullend, voor als iets hierboven ontbreekt",
                 ("Configuratie", () => mf.BeheerOpenConfig()),
-                ("Autostuur", () => mf.BeheerOpenSteer()),
                 ("AgIO", () => mf.BeheerOpenAgIO()));
 
             // Shutting down: our own question, then the normal AgOpenGPS close path. The caller of

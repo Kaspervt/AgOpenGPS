@@ -127,7 +127,7 @@ namespace AgOpenGPS
             c3.Controls.Add(new Label { Text = "De volledige menu's, voor afstellen en storingen.", Font = JohanTheme.Font(10F), ForeColor = JohanTheme.Muted, AutoSize = true, Location = new Point(S(24), S(54)) });
             int bw = (cardW - S(48) - S(12)) / 2, bh = S(56), by = S(92);
             Knop(c3, new Rectangle(S(24), by, bw, bh), "Configuratie", "settings_licht_64", () => mf.BeheerOpenConfig());
-            Knop(c3, new Rectangle(S(24) + bw + S(12), by, bw, bh), "Autostuur", "steering-wheel_licht_64", () => mf.BeheerOpenSteer());
+            Knop(c3, new Rectangle(S(24) + bw + S(12), by, bw, bh), "Stuurtest", "steering-wheel_licht_64", () => { using (var f = new FormStuurtest(mf)) f.ShowDialog(this); });
             Knop(c3, new Rectangle(S(24), by + bh + S(12), bw, bh), "AgIO", "plug_licht_64", () => mf.BeheerOpenAgIO());
             Knop(c3, new Rectangle(S(24) + bw + S(12), by + bh + S(12), bw, bh), "Logboek", "list_licht_64", () => mf.BeheerOpenLog());
             // (the "original layout" button is gone on Kasper's request, 8-11; the long press on the menu still works)
