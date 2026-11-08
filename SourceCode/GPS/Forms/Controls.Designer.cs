@@ -558,7 +558,7 @@ namespace AgOpenGPS
             }
 
             // Johan fork: in driver mode the field button shows the simple field list first
-            if (isDriverMode && !isDriverUnlocked)
+            if (isDriverMode && !isDriverUnlocked && !johanUpstreamJobMenu)
             {
                 bool wilNieuw;
                 using (var picker = new FormPerceel(this))
