@@ -113,7 +113,9 @@ namespace AgOpenGPS
         {
             if (f == null || f.IsDisposed || themed.Contains(f)) return;
             themed.Add(f);
+            // FormTimedMessage disposes before it closes, so FormClosed never fires there
             f.FormClosed += (s, e) => themed.Remove((Form)s);
+            f.Disposed += (s, e) => themed.Remove((Form)s);
             if (IsOwn(f)) return;
             try { Apply(f); }
             catch (Exception ex) { Log.EventWriter("Johan theme: " + f.Name + ": " + ex.Message); }

@@ -34,8 +34,9 @@ namespace AgOpenGPS
             stap = ToolSettings.Default.setAS_snapDistance * 0.01;
             if (stap <= 0) stap = 0.20;
             // a small step next to the configured one: sometimes you only want a nudge
-            fijn = 0.05;
-            if (stap <= 0.05) { fijn = stap; stap = Math.Max(stap * 4, 0.20); }
+            if (Math.Abs(stap - 0.05) < 0.001) fijn = 0.01;                 // snap is 5 cm: fine step 1 cm
+            else if (stap < 0.05) { fijn = stap; stap = 0.20; }              // snap finer than 5 cm: that is the fine step
+            else fijn = 0.05;
             BuildLayout();
 
             tick.Tick += (s, e) => UpdateLabel();

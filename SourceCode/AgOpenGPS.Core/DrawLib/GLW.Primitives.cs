@@ -1,4 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 namespace AgOpenGPS.Core.DrawLib
 {
@@ -11,7 +11,9 @@ namespace AgOpenGPS.Core.DrawLib
         // When the number of vertices is MinVerticesForArray or higher, a Vertex2Array is used
         // to pass the vertices as bulk.
         // For smaller numbers, the vertices are simply passed one by one.
-        private const int MinVerticesForArray = 40;
+        // The array path creates, fills and deletes a GPU buffer on every call, which costs more
+        // than a few hundred immediate-mode vertices; hence the threshold is not too low.
+        private const int MinVerticesForArray = 200;
 
         public static void BeginPointsPrimitive()
         {

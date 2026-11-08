@@ -1,4 +1,4 @@
-﻿//Please, if you use this, share the improvements
+//Please, if you use this, share the improvements
 
 using System;
 using System.Collections.Generic;
@@ -110,6 +110,7 @@ namespace AgOpenGPS
         private readonly Stopwatch swFrame = new Stopwatch();
 
         public double secondsSinceStart;
+        public DateTime processStartTime = DateTime.Now;
         public double gridToolSpacing;
 
         //private readonly Stopwatch swDraw = new Stopwatch();
@@ -336,7 +337,8 @@ namespace AgOpenGPS
                 null);
 
             //time keeper
-            secondsSinceStart = (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds;
+            processStartTime = Process.GetCurrentProcess().StartTime;
+            secondsSinceStart = (DateTime.Now - processStartTime).TotalSeconds;
 
             camera = new Camera(
                 Properties.Settings.Default.setDisplay_camPitch,
@@ -1049,7 +1051,7 @@ namespace AgOpenGPS
         {
             SaveFormGPSWindowSettings();
 
-            double minutesSinceStart = ((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds) / 60;
+            double minutesSinceStart = ((DateTime.Now - processStartTime).TotalSeconds) / 60;
             if (minutesSinceStart < 1) minutesSinceStart = 1;
 
             Log.EventWriter("Missed Sentence Counter Total: " + missedSentenceCount.ToString()

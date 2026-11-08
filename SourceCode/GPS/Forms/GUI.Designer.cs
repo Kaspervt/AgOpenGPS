@@ -1,4 +1,4 @@
-﻿//Please, if you use this, share the improvements
+//Please, if you use this, share the improvements
 
 using AgLibrary.Logging;
 using AgOpenGPS.Core.Translations;
@@ -384,7 +384,8 @@ namespace AgOpenGPS
 
                 btnAutoSteerConfig.Text = SetSteerAngle + "\r\n" + ActualSteerAngle;
 
-                secondsSinceStart = (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds;
+                // the process start time does not change: no new Process handle every 250 ms
+                secondsSinceStart = (DateTime.Now - processStartTime).TotalSeconds;
             }
 
         }//wait till timer fires again.         

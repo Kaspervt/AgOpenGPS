@@ -1,4 +1,4 @@
-﻿using AgLibrary.Logging;
+using AgLibrary.Logging;
 using AgOpenGPS;
 using AgOpenGPS.Core.Drawing;
 using AgOpenGPS.Core.DrawLib;
@@ -1859,7 +1859,9 @@ namespace AgOpenGPS
 
             //draw the clock
             GL.Color4(0.9752f, 0.80f, 0.3f, 0.98);
-            font.DrawText(center - 210, oglMain.Height - 26, DateTime.Now.ToString("T"), 0.8);
+            // one clock string per second instead of one per frame
+            if (DateTime.Now.Second != clockSecond) { clockSecond = DateTime.Now.Second; clockText = DateTime.Now.ToString("T"); }
+            font.DrawText(center - 210, oglMain.Height - 26, clockText, 0.8);
 
             GL.PushMatrix();
 
@@ -2455,8 +2457,9 @@ namespace AgOpenGPS
             center = oglMain.Width / -2 + 10;
             double deg = glm.toDegrees(fixHeading);
             if (deg > 359.9) deg = 359.9;
-            string strHeading = (deg).ToString("N1");
-            int lenth = 18 * strHeading.Length;
+            string strHeading = null;
+            int lenth = 0;
+            if (isDebugOn) { strHeading = (deg).ToString("N1"); lenth = 18 * strHeading.Length; }
 
             // Debug values, only shown when the debug option is on
             if (isDebugOn)
@@ -2833,7 +2836,14 @@ namespace AgOpenGPS
             double iconX = boxX + padH;
             double iconY = boxY + (boxHeight - iconHeight);
 
-            bool useLight = UseLightIconBySampling((int)iconX, (int)iconY, (int)iconWidth, (int)iconHeight);
+            // the pixel read-back stalls the GPU pipeline; the background under the icon changes slowly,
+            // so sample a few times per second and keep the last answer
+            if (++headlandSampleCounter >= 5)
+            {
+                headlandSampleCounter = 0;
+                headlandUseLight = UseLightIconBySampling((int)iconX, (int)iconY, (int)iconWidth, (int)iconHeight);
+            }
+            bool useLight = headlandUseLight;
             Texture2D iconTexture = useLight ? ScreenTextures.HeadlandLight : ScreenTextures.HeadlandDark;
 
             // Draw icon
@@ -2868,6 +2878,12 @@ namespace AgOpenGPS
         /// Decide whether to use a light icon by sampling a small pixel area under the icon.
         /// Returns true for dark background (use light icon), false for light background (use dark icon).
         /// </summary>
+        private int headlandSampleCounter = 5;
+        private bool headlandUseLight;
+        private byte[] headlandSampleBuffer;
+        private int clockSecond = -1;
+        private string clockText = "";
+
         private bool UseLightIconBySampling(int x, int yTop, int w, int h)
         {
             // Sample a tiny 8x8 block around the center of the icon
@@ -2883,7 +2899,8 @@ namespace AgOpenGPS
             if (maxW <= 0 || maxH <= 0) return false; // fallback: assume light background → use dark icon
 
             // Read pixels (BGRA order when using PixelFormat.Bgra)
-            byte[] buffer = new byte[maxW * maxH * 4];
+            if (headlandSampleBuffer == null || headlandSampleBuffer.Length != maxW * maxH * 4) headlandSampleBuffer = new byte[maxW * maxH * 4];
+            byte[] buffer = headlandSampleBuffer;
             // If you have a System.Drawing.PixelFormat in scope, fully qualify the OpenGL one:
             // using GLPixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
             GL.ReadPixels(readX, readY, maxW, maxH,
