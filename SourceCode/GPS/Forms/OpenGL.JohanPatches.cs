@@ -72,6 +72,9 @@ namespace AgOpenGPS
 
             GL.Color4(vbo.R, vbo.G, vbo.B, isDay ? (byte)152 : (byte)76);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo.BufferId);
+            // the Core draw helpers leave generic attribute array 0 switched on; it would win over the
+            // conventional vertex array on drivers that do not alias the two, so switch it off here
+            GL.DisableVertexAttribArray(0);
             GL.EnableClientState(ArrayCap.VertexArray);
             GL.VertexPointer(2, VertexPointerType.Float, 0, IntPtr.Zero);
             GL.DrawArrays(PrimitiveType.TriangleStrip, 0, vbo.VertexCount);

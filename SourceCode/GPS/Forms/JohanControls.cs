@@ -13,6 +13,8 @@ namespace AgOpenGPS
     public class JohanRoundButton : Button
     {
         public int Radius { get; set; } = 14;
+        // colour behind the corners; null = the parent's colour (over the map: the ground colour)
+        public Color? Corner { get; set; }
         private bool hover, pressed;
 
         public JohanRoundButton()
@@ -43,7 +45,7 @@ namespace AgOpenGPS
         {
             var g = e.Graphics;
             // the parent's colour behind the corners
-            using (var back = new SolidBrush(Parent?.BackColor ?? JohanTheme.Bar)) g.FillRectangle(back, ClientRectangle);
+            using (var back = new SolidBrush(Corner ?? Parent?.BackColor ?? JohanTheme.Bar)) g.FillRectangle(back, ClientRectangle);
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             Color fill = BackColor;
@@ -92,6 +94,7 @@ namespace AgOpenGPS
         public int Radius { get; set; } = 12;
         public Color? Dot { get; set; }
         public Color Fill { get; set; } = JohanTheme.Bar;
+        public Color? Corner { get; set; }
 
         public JohanPill()
         {
@@ -103,7 +106,7 @@ namespace AgOpenGPS
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            using (var back = new SolidBrush(Parent?.BackColor ?? JohanTheme.Bar)) g.FillRectangle(back, ClientRectangle);
+            using (var back = new SolidBrush(Corner ?? Parent?.BackColor ?? JohanTheme.Bar)) g.FillRectangle(back, ClientRectangle);
             g.SmoothingMode = SmoothingMode.AntiAlias;
             if (Fill.A > 0)
                 using (var path = JohanRoundButton.Rounded(new Rectangle(0, 0, Width - 1, Height - 1), Radius))

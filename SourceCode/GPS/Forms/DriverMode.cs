@@ -231,15 +231,15 @@ namespace AgOpenGPS
             Controls.Add(panelJohanBottom);
 
             // ---- overlays over the map (separate windows above the OpenGL view, as in the canvas)
-            lblJBewerkt = new JohanPill { Font = JohanTheme.Font(13F), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Visible = false };
+            lblJBewerkt = new JohanPill { Font = JohanTheme.Font(13F), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Corner = JohanTheme.FieldGround, Visible = false };
             Controls.Add(lblJBewerkt);
-            lblJAfstand = new JohanPill { Font = JohanTheme.Font(20F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Visible = false };
+            lblJAfstand = new JohanPill { Font = JohanTheme.Font(20F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Corner = JohanTheme.FieldGround, Visible = false };
             Controls.Add(lblJAfstand);
             btnJZoomIn = (JohanRoundButton)JohanButton("", "zoom-in_licht_64", 28, 10F, false);
-            btnJZoomIn.BackColor = JohanTheme.Bg; btnJZoomIn.Radius = 12; btnJZoomIn.Visible = false;
+            btnJZoomIn.BackColor = JohanTheme.Bg; btnJZoomIn.Radius = 12; btnJZoomIn.Visible = false; btnJZoomIn.Corner = JohanTheme.FieldGround;
             btnJZoomIn.Click += (s, e) => { camera.ZoomIn(); SetZoom(); };
             btnJZoomUit = (JohanRoundButton)JohanButton("", "zoom-out_licht_64", 28, 10F, false);
-            btnJZoomUit.BackColor = JohanTheme.Bg; btnJZoomUit.Radius = 12; btnJZoomUit.Visible = false;
+            btnJZoomUit.BackColor = JohanTheme.Bg; btnJZoomUit.Radius = 12; btnJZoomUit.Visible = false; btnJZoomUit.Corner = JohanTheme.FieldGround;
             btnJZoomUit.Click += (s, e) => { camera.ZoomOut(); SetZoom(); };
             Controls.Add(btnJZoomIn);
             Controls.Add(btnJZoomUit);
@@ -327,7 +327,7 @@ namespace AgOpenGPS
                 btnJAuto.Bounds = new Rectangle(bx, top, w - pad - bx, bhh);
 
                 lblJBewerkt.Bounds = new Rectangle(w - 20 - 260, h - JohanBottomH - 16 - 40, 260, 40);
-                lblJAfstand.Bounds = new Rectangle((w - 420) / 2, JohanTopH + 20, 420, 56);
+                lblJAfstand.Bounds = new Rectangle((w - 560) / 2, JohanTopH + 20, 560, 56);
                 btnJZoomIn.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20, 56, 56);
                 btnJZoomUit.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20 + 56 + 10, 56, 56);
 
@@ -427,7 +427,14 @@ namespace AgOpenGPS
 
             // distance to the line, as the pill in the canvas (avgPivDistance is the smoothed cross-track in mm)
             bool lijnActief = isJobStarted && (trk.idx > -1 || ct.isContourBtnOn);
-            if (lijnActief)
+            if (!isFirstHeadingSet && headingFromSource != "Dual")
+            {
+                // the arrow points anywhere until the first metres are driven; say so instead of the question mark
+                lijnActief = true;
+                const string wacht = "Rijrichting onbekend, rij vooruit";
+                if (lblJAfstand.Text != wacht) lblJAfstand.Text = wacht;
+            }
+            else if (lijnActief)
             {
                 double cmAf = avgPivDistance * 0.1;
                 int cmAbs = (int)Math.Round(Math.Abs(cmAf));
@@ -480,6 +487,7 @@ namespace AgOpenGPS
         public void ApplyDriverMode()
         {
             bool hide = isDriverMode && !isDriverUnlocked;
+            JohanLook.On = hide;   // map look follows the driver screen, also after unlock and back
 
             // Left column: tools menu and settings menu
             statusStripLeft.Visible = !hide;

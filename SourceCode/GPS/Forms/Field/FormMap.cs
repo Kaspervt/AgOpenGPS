@@ -1,4 +1,4 @@
-﻿using AgLibrary.Logging;
+using AgLibrary.Logging;
 using AgOpenGPS.Core;
 using AgOpenGPS.Core.Models;
 using AgOpenGPS.Core.Streamers;
@@ -120,7 +120,7 @@ namespace AgOpenGPS
             {
                 autoTicks++;
                 // at least 2 s for the tiles, capture as soon as a load round is complete, give up waiting at 10 s
-                if ((autoTicks >= 4 && tilesLoaded) || autoTicks >= 20)
+                if (autoTicks >= 4 && tilesLoaded)
                 {
                     autoTimer.Stop();
                     try
@@ -130,6 +130,15 @@ namespace AgOpenGPS
                         Log.EventWriter("Aerial photo captured for " + mf.currentFieldDirectory);
                     }
                     catch (Exception ex) { Log.EventWriter("Aerial auto capture failed: " + ex.Message); }
+                    isClosing = true;
+                    Close();
+                }
+                else if (autoTicks >= 30)
+                {
+                    // no tiles after 15 s (no internet): keep nothing, so a later tap tries again
+                    autoTimer.Stop();
+                    Log.EventWriter("Aerial photo: no map tiles, nothing saved");
+                    mf.TimedMessageBox(2500, "Luchtfoto", "Geen kaart binnengekregen (internet?)");
                     isClosing = true;
                     Close();
                 }
@@ -144,6 +153,8 @@ namespace AgOpenGPS
                 e.Cancel = true;
                 return;
             }
+            if (autoTimer != null) { autoTimer.Stop(); autoTimer.Dispose(); autoTimer = null; }
+            if (AutoCapture) return;   // the fitted zoom is not the user's choice
             Properties.Settings.Default.setWindow_BingMapSize = Size;
             Properties.Settings.Default.setWindow_BingZoom = (int)gMapControl.Zoom;
             Properties.Settings.Default.Save();

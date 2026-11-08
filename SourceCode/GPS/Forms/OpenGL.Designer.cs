@@ -486,8 +486,9 @@ namespace AgOpenGPS
                     //LightBar if AB Line is set and turned on or contour
                     if (johanScreen)
                     {
-                        // keep the smoothed cross-track value up to date for the distance pill
-                        avgPivDistance = avgPivDistance * 0.5 + lightbarDistance * 0.5;
+                        // keep the smoothed cross-track value up to date for the distance pill (same gate as upstream)
+                        if (ct.isContourBtnOn || trk.idx > -1 || recPath.isDrivingRecordedPath)
+                            avgPivDistance = avgPivDistance * 0.5 + lightbarDistance * 0.5;
                     }
                     else if (isLightBarNotSteerBar)
                     {

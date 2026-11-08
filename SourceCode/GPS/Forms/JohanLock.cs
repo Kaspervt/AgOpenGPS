@@ -49,7 +49,7 @@ namespace AgOpenGPS
             s.setDisplay_isTextureOn = false;                                   // flat ground, no grain
             s.setDisplay_colorSectionsDay = System.Drawing.Color.FromArgb(22, 163, 74);   // worked area green
             s.setDisplay_colorVehicle = JohanTheme.Blue;
-            JohanLook.On = true;
+            JohanLook.On = true;   // ApplyDriverMode keeps it in step afterwards
         }
     }
 }

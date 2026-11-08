@@ -1,4 +1,4 @@
-﻿using AgIO.Properties;
+using AgIO.Properties;
 using AgLibrary.Logging;
 using Microsoft.Win32;
 using System;
@@ -249,6 +249,7 @@ namespace AgIO
             if (RegistrySettings.profileName == "" && System.IO.File.Exists(System.IO.Path.Combine(Application.StartupPath, "johan.lock")))
             {
                 RegistrySettings.Save(RegKeys.profileName, "Johan");
+                Settings.Default.Save();   // creates Johan.XML, so the settings are kept at close
                 Log.EventWriter("Johan lock: profile set to Johan without asking");
                 this.Text = "AgIO  v" + Program.Version + " Profile: " + RegistrySettings.profileName;
             }

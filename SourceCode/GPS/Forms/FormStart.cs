@@ -162,7 +162,7 @@ namespace AgOpenGPS
                 ForeColor = muted,
                 Font = new Font("Segoe UI", 10F),
                 AutoSize = true,
-                Location = new Point(x, h - 64)
+                Location = new Point(x, h - 78)
             };
             Controls.Add(lblField);
 
@@ -206,7 +206,7 @@ namespace AgOpenGPS
             lblField.Text = (string.IsNullOrEmpty(mf.currentFieldDirectory)
                 ? "Nog geen perceel"
                 : "Laatste perceel: " + mf.currentFieldDirectory)
-                + "     Werktuig: " + RegistrySettings.toolProfileName + " " + mf.tool.width.ToString("0.0") + " m";
+                + "\nWerktuig: " + RegistrySettings.toolProfileName + " " + mf.tool.width.ToString("0.0") + " m";
         }
 
         protected override void OnPaintBackground(PaintEventArgs e)

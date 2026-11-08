@@ -1352,8 +1352,8 @@ namespace AgOpenGPS
                         }
                     }
 
-                    //pan and hide menus
-                    if (point.X > 30 && point.X < 60)
+                    //pan and hide menus (not in the Johan driver screen: those icons are not drawn there)
+                    if (point.X > 30 && point.X < 60 && !(isDriverMode && !isDriverUnlocked))
                     {
                         if (point.Y > 50 && point.Y < 80)
                         {
@@ -1402,8 +1402,8 @@ namespace AgOpenGPS
                     }
                 }
 
-                //zoom buttons
-                if (point.X > oglMain.Width - 80)
+                //zoom buttons (the Johan driver screen has its own)
+                if (point.X > oglMain.Width - 80 && !(isDriverMode && !isDriverUnlocked))
                 {
                     // --
                     if (point.Y < 260 && point.Y > 170)
