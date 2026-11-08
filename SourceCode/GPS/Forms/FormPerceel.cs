@@ -32,6 +32,7 @@ namespace AgOpenGPS
             public string Dir, Naam, Lijnen;
             public double Ha, Km;
             public bool Huidig;
+            public List<vec3> Vorm;
         }
 
         public FormPerceel(FormGPS formGPS)
@@ -59,7 +60,7 @@ namespace AgOpenGPS
             Controls.Add(new Label { Text = "Dichtstbijzijnde bovenaan", Font = new Font("Segoe UI", 11F), ForeColor = muted, AutoSize = true, Location = new Point(x + 2, 92) });
 
             var kop = new Panel { Bounds = new Rectangle(x, 128, listW, 28), BackColor = bg };
-            kop.Controls.Add(new Label { Text = "PERCEEL", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(24, 4) });
+            kop.Controls.Add(new Label { Text = "PERCEEL", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(140, 4) });
             kop.Controls.Add(new Label { Text = "OPPERVLAK", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 440, 4) });
             kop.Controls.Add(new Label { Text = "AFSTAND", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 300, 4) });
             kop.Controls.Add(new Label { Text = "LIJNEN", ForeColor = muted, Font = new Font("Segoe UI", 9F, FontStyle.Bold), AutoSize = true, Location = new Point(listW - 170, 4) });
@@ -92,7 +93,10 @@ namespace AgOpenGPS
                 b.Click += (s, e) => OpenField(dir);
 
                 // Labels inside the button draw over it; forward their clicks
-                b.Controls.Add(Lbl(rij.Naam, 24, 20, text, 16F, FontStyle.Bold, dir));
+                var vorm = new Vormpje(rij.Vorm) { Bounds = new Rectangle(20, 6, 96, 60) };
+                vorm.Click += (s, e) => OpenField(dir);
+                b.Controls.Add(vorm);
+                b.Controls.Add(Lbl(rij.Naam, 140, 20, text, 16F, FontStyle.Bold, dir));
                 b.Controls.Add(Lbl(rij.Ha > 0 ? rij.Ha.ToString("0.0") + " ha" : "geen grens", listW - 440, 22, text, 14F, FontStyle.Regular, dir));
                 b.Controls.Add(Lbl(rij.Km < 0 ? "" : rij.Km < 0.05 ? "hier" : rij.Km.ToString("0.0") + " km", listW - 300, 22, muted, 14F, FontStyle.Regular, dir));
                 b.Controls.Add(Lbl(rij.Lijnen, listW - 170, 22, muted, 12F, FontStyle.Regular, dir));
@@ -114,15 +118,15 @@ namespace AgOpenGPS
 
             var nieuw = new JohanRoundButton
             {
-                Text = "Nieuw perceel of gewoon rijden",
-                Bounds = new Rectangle(w - x - 420, h - 100, 420, 64),
-                BackColor = bg,
-                ForeColor = text,
+                Text = "Nieuw perceel",
+                Image = JohanSkin.Icon("plus_licht_64", 28),
+                Bounds = new Rectangle(w - x - 280, h - 100, 280, 64),
+                BackColor = JohanTheme.Green,
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold)
             };
-            nieuw.FlatAppearance.BorderSize = 2;
-            nieuw.FlatAppearance.BorderColor = muted;
+            nieuw.FlatAppearance.BorderSize = 0;
             nieuw.Click += (s, e) => { WantsNewField = true; Close(); };
             Controls.Add(nieuw);
         }
@@ -156,7 +160,7 @@ namespace AgOpenGPS
                 try
                 {
                     var bnd = BoundaryFiles.Load(dir);
-                    if (bnd.Count > 0 && bnd[0].fenceLine.Count > 2) rij.Ha = Hectares(bnd[0].fenceLine);
+                    if (bnd.Count > 0 && bnd[0].fenceLine.Count > 2) { rij.Ha = Hectares(bnd[0].fenceLine); rij.Vorm = bnd[0].fenceLine; }
                 }
                 catch (Exception ex) { Log.EventWriter("Field picker: boundary of " + rij.Naam + ": " + ex.Message); }
                 try
@@ -168,6 +172,36 @@ namespace AgOpenGPS
                 rijen.Add(rij);
             }
             return rijen.OrderBy(r => r.Km < 0 ? double.MaxValue : r.Km).ThenBy(r => r.Naam).ToList();
+        }
+
+        // the outline of the field, scaled into a small box (as in the canvas)
+        private class Vormpje : Control
+        {
+            private readonly List<vec3> ring;
+            public Vormpje(List<vec3> r)
+            {
+                ring = r;
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor, true);
+                BackColor = Color.Transparent;
+            }
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                if (ring == null || ring.Count < 3) return;
+                double minE = ring.Min(p => p.easting), maxE = ring.Max(p => p.easting);
+                double minN = ring.Min(p => p.northing), maxN = ring.Max(p => p.northing);
+                double sc = Math.Min((Width - 6) / Math.Max(1, maxE - minE), (Height - 6) / Math.Max(1, maxN - minN));
+                float ox = (float)((Width - (maxE - minE) * sc) / 2), oy = (float)((Height - (maxN - minN) * sc) / 2);
+                var pts = new PointF[ring.Count];
+                for (int i = 0; i < ring.Count; i++)
+                    pts[i] = new PointF(ox + (float)((ring[i].easting - minE) * sc), (float)(Height - oy - (ring[i].northing - minN) * sc));
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using (var fill = new SolidBrush(Color.FromArgb(107, 142, 63)))
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 2f))
+                {
+                    e.Graphics.FillPolygon(fill, pts);
+                    e.Graphics.DrawPolygon(pen, pts);
+                }
+            }
         }
 
         private static double Hectares(List<vec3> ring)
@@ -183,6 +217,9 @@ namespace AgOpenGPS
             Enabled = false;
             try
             {
+                // upstream FileOpenField fires the close of the old field and does not wait for it; that close
+                // lands after the new field is open and shuts it again. So close first, then open.
+                if (mf.isJobStarted) await mf.FileSaveEverythingBeforeClosingField();
                 await mf.FileOpenField(Path.Combine(dir, "Field.txt"));
                 if (mf.isJobStarted)
                 {

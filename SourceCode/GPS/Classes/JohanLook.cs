@@ -15,6 +15,7 @@ namespace AgOpenGPS
         public static readonly ColorRgba Line = new ColorRgba(0.992f, 0.878f, 0.278f);          // #fde047
         public static readonly ColorRgba LineHalo = new ColorRgba(0.059f, 0.090f, 0.165f, 0.85f); // #0f172a
         public static readonly ColorRgba Guide = new ColorRgba(1.0f, 1.0f, 1.0f, 0.30f);          // side guide lines
+        public static readonly ColorRgba Grid = new ColorRgba(0.33f, 0.37f, 0.31f);                // orientation grid: a shade lighter than the ground
         public static readonly ColorRgba Boundary = new ColorRgba(0.886f, 0.910f, 0.941f);       // #e2e8f0
         public static readonly ColorRgba BoundaryHalo = new ColorRgba(0.059f, 0.090f, 0.165f, 0.6f);
         public static readonly ColorRgba OutOfBounds = new ColorRgba(0.863f, 0.149f, 0.149f);    // #dc2626

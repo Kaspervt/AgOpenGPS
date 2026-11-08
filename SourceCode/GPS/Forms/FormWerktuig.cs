@@ -62,7 +62,7 @@ namespace AgOpenGPS
                     bool selected = name == RegistrySettings.toolProfileName;
                     var b = new JohanRoundButton
                     {
-                        Text = selected ? name + "      " + mf.tool.width.ToString("0.0") + " m   (nu achter de trekker)" : name,
+                        Text = name + "      " + Breedte(f, selected ? mf.tool.width : double.NaN) + (selected ? "   (nu achter de trekker)" : ""),
                         Size = new Size(listW - 24, 72),
                         Margin = new Padding(0, 0, 0, 10),
                         BackColor = selected ? (JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95)) : JohanTheme.Panel,
@@ -92,6 +92,63 @@ namespace AgOpenGPS
             terug.FlatAppearance.BorderSize = 0;
             terug.Click += (s, e) => Close();
             Controls.Add(terug);
+
+            // new tool: name and working width, copied from the current one, then loaded
+            var plus = new JohanRoundButton
+            {
+                Text = "Nieuw werktuig",
+                Image = JohanSkin.Icon("plus_licht_64", 28),
+                Bounds = new Rectangle(w - x - 280, h - 100, 280, 64),
+                BackColor = JohanTheme.Green,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = JohanTheme.Font(14F, FontStyle.Bold)
+            };
+            plus.FlatAppearance.BorderSize = 0;
+            plus.Click += (s, e) => NieuwWerktuig();
+            Controls.Add(plus);
+        }
+
+        private void NieuwWerktuig()
+        {
+            string name = AgOpenGPS.Forms.FormInputDialog.ShowInput("Nieuw werktuig", "Naam van het werktuig", mf);
+            if (string.IsNullOrWhiteSpace(name)) return;
+            name = name.Trim();
+            string path = Path.Combine(RegistrySettings.toolsDirectory, name + ".xml");
+            if (File.Exists(path)) { mf.TimedMessageBox(2500, "Werktuig", "Er is al een werktuig met die naam"); return; }
+
+            double width = mf.tool.width;
+            using (var num = new FormNumeric(0.5, 60, width))
+            {
+                if (num.ShowDialog(this) == DialogResult.OK) width = num.ReturnValue;
+            }
+
+            // start from the current tool, set the width, save under the new name and load it
+            double oldWidth = ToolSettings.Default.setVehicle_toolWidth;
+            ToolSettings.Default.setVehicle_toolWidth = width;
+            XmlSettingsHandler.SaveXMLFile(path, ToolSettings.Default);
+            ToolSettings.Default.setVehicle_toolWidth = oldWidth;
+            Log.EventWriter("Tool picker: new tool " + name + " (" + width.ToString("0.0") + " m)");
+            LoadTool(mf, name);
+            Close();
+        }
+
+        // Working width straight from the profile file, so every tool in the list shows it
+        private static string Breedte(string file, double loadedWidth)
+        {
+            if (!double.IsNaN(loadedWidth)) return loadedWidth.ToString("0.0") + " m";
+            try
+            {
+                var doc = System.Xml.Linq.XDocument.Load(file);
+                foreach (var e in doc.Descendants("setting"))
+                    if ((string)e.Attribute("name") == "setVehicle_toolWidth")
+                    {
+                        double w = double.Parse(e.Element("value").Value, System.Globalization.CultureInfo.InvariantCulture);
+                        return w.ToString("0.0") + " m";
+                    }
+            }
+            catch { }
+            return "";
         }
 
         // Same sequence as FormLoadVehicleTool, tool only. Returns true when switched.
