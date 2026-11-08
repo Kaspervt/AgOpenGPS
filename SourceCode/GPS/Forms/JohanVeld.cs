@@ -62,7 +62,7 @@ namespace AgOpenGPS
             Settings.Default.setDisplay_isJohanLight = light;
             Settings.Default.Save();
             // own non-modal bars are simply closed; they come back in the new colours when opened
-            foreach (string n in new[] { "FormVerschuif", "FormGrens", "FormLijn", "FormKopakker" })
+            foreach (string n in new[] { "FormVerschuif", "FormGrens", "FormLijn", "FormKopakker", "FormLijnKeuze" })
             {
                 var f = System.Windows.Forms.Application.OpenForms[n];
                 if (f != null) { try { f.Close(); } catch { } }

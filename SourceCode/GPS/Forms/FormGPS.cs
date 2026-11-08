@@ -323,7 +323,7 @@ namespace AgOpenGPS
             JohanTheme.WriteLightToRegistry(Settings.Default.setDisplay_isJohanLight);   // AgIO follows the same choice
             JohanTheme.IsOwnForm = f => f is FormStart || f is FormPerceel || f is FormWerktuig
                                         || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif
-                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten;
+                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten || f is FormLijnKeuze;
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {
@@ -1752,6 +1752,9 @@ namespace AgOpenGPS
         {
             FormTimedMessage form = new FormTimedMessage(timeout, s1, s2);
             form.Show(this);
+            // Johan screen: below the top bar, so the field and tool buttons stay reachable
+            if (JohanSchermActief && panelJohanTop != null)
+                form.Location = new Point(Left + JohanTheme.S(16), Top + panelJohanTop.Bottom + JohanTheme.S(16));
             this.Activate();
         }
 

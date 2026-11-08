@@ -223,6 +223,7 @@ namespace AgOpenGPS
 
             // off: the same question as in Beheer and on the start screen
             btnJUit = JohanButton("", "power_licht_64", 24, 10F, false);
+            btnJUit.BackColor = JohanTheme.Red;   // red, as in Beheer: this one switches off
             btnJUit.Click += (s, e) => { using (var f = new FormAfsluiten(this)) f.ShowDialog(this); JohanAfsluitenUitvoeren(); };
             panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema, btnJInstellingen, btnJUit });
             Controls.Add(panelJohanTop);
@@ -231,7 +232,18 @@ namespace AgOpenGPS
             panelJohanBottom = new Panel { BackColor = JohanTheme.Bar, Visible = false };
 
             btnJAndereLijn = JohanButton("Andere lijn", "line_licht_64", 32, 12F, true);
-            btnJAndereLijn.Click += (s, e) => { if (isJobStarted && trk.gArr.Count == 0) JohanOpenLijn(); else JohanAndereLijn(); };
+            btnJAndereLijn.Click += (s, e) =>
+            {
+                if (isJobStarted && trk.gArr.Count == 0) { JohanOpenLijn(); return; }
+                JohanAndereLijn();
+                // with more than one line also show the list, so the right one is one tap away
+                int zichtbaar = 0;
+                foreach (var t in trk.gArr) if (t.isVisible) zichtbaar++;
+                if (!isJobStarted || zichtbaar < 2) return;
+                var open = Application.OpenForms["FormLijnKeuze"] as FormLijnKeuze;
+                if (open != null) { open.Wakker(); return; }
+                new FormLijnKeuze(this).Show(this);
+            };
 
             btnJVerschuif = JohanButton("Lijn verschuiven", "arrows-horizontal_licht_64", 32, 12F, true);
             btnJVerschuif.Click += (s, e) =>
@@ -341,11 +353,8 @@ namespace AgOpenGPS
             var dirInfo = new System.IO.DirectoryInfo(System.IO.Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory));
             var fromDisk = new BingMapStreamer().TryRead(dirInfo);
             if (fromDisk != null) { worldGrid.BingMap = fromDisk; return; }
-            Form open = Application.OpenForms["FormMap"];
-            if (open != null) { open.Focus(); return; }
-            // no photo yet: the map window fetches one for this field by itself and closes again
-            var map = new FormMap(this) { AutoCapture = true };
-            map.Show(this);
+            // no photo yet: fetch the tiles for this field in the background (JohanLuchtfoto.cs), no map window
+            JohanLuchtfotoOphalen();
         }
 
 
@@ -361,6 +370,21 @@ namespace AgOpenGPS
             if (!isJobStarted) { TimedMessageBox(1500, "Lijn", "Eerst een perceel openen"); return; }
             if (Application.OpenForms["FormLijn"] != null) return;
             new FormLijn(this).Show(this);
+        }
+
+        // Select a line by index, the same side effects as the AgOpenGPS cycle button
+        public void JohanKiesLijn(int idx)
+        {
+            if (!isJobStarted || idx < 0 || idx >= trk.gArr.Count || !trk.gArr[idx].isVisible) return;
+            trk.isAutoTrack = false;
+            btnAutoTrack.Image = Resources.AutoTrackOff;
+            trk.idx = idx;
+            guideLineCounter = 20;
+            lblGuidanceLine.Visible = true;
+            lblGuidanceLine.Text = trk.gArr[idx].name;
+            if (isBtnAutoSteerOn) { btnAutoSteer.PerformClick(); TimedMessageBox(2000, "Autosturen uit", "Lijn gewisseld"); }
+            if (yt.isYouTurnBtnOn) btnAutoYouTurn.PerformClick();
+            lblNumCu.Text = (trk.idx + 1).ToString() + "/" + trk.gArr.Count.ToString();
         }
 
         private void JohanAndereLijn()
