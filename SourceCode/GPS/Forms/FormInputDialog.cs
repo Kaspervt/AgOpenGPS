@@ -44,6 +44,8 @@ namespace AgOpenGPS.Forms
         // Geeft de ingevoerde naam terug, of null bij Cancel / lege invoer
         public static string ShowInput(string title, string prompt, FormGPS formGPS)
         {
+            // Johan fork: the driver screens type names on the on-screen keyboard bar
+            if (JohanLock.IsLocked) return FormTekst.Vraag(formGPS, prompt, "");
             using (var form = new FormInputDialog(title, prompt, formGPS))
             {
                 if (form.ShowDialog() == DialogResult.OK)
@@ -58,6 +60,7 @@ namespace AgOpenGPS.Forms
 
         public static string ShowInput(string title, string prompt, FormGPS formGPS, string defaultValue)
         {
+            if (JohanLock.IsLocked) return FormTekst.Vraag(formGPS, prompt, defaultValue);
             using (var form = new FormInputDialog(title, prompt, formGPS))
             {
                 form.textBoxInput.Text = defaultValue ?? "";
