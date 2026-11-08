@@ -262,10 +262,13 @@ namespace AgOpenGPS
             btnJ3D.BackColor = JohanTheme.Bg; btnJ3D.Radius = 12; btnJ3D.Visible = false; btnJ3D.Corner = JohanTheme.FieldGround;
             btnJ3D.Click += (s, e) =>
             {
-                bool naar3D = camera.PitchInDegrees > -30;
+                // cycle: 2D (flat) -> 3D schuin (45) -> 3D steil (65) -> 2D
+                double p = camera.PitchInDegrees;
+                double volgende = p > -20 ? -45 : p > -55 ? -65 : 0;
                 camera.FollowDirectionHint = true;
-                camera.PitchInDegrees = naar3D ? -65 : 0;
-                btnJ3D.Image = JohanSkin.Icon(naar3D ? "map-2_licht_64" : "cube_licht_64", 28);
+                camera.PitchInDegrees = volgende;
+                btnJ3D.Image = JohanSkin.Icon(volgende == 0 ? "cube_licht_64" : "map-2_licht_64", 28);
+                TimedMessageBox(1200, "Weergave", volgende == 0 ? "2D, van boven" : volgende == -45 ? "3D, schuin" : "3D, steil");
                 SetZoom();
             };
             Controls.Add(btnJ3D);

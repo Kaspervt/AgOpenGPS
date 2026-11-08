@@ -80,6 +80,15 @@ namespace AgOpenGPS
             Log.EventWriter("Theme switched live, light = " + light);
         }
 
+        // Beheer: the full AgOpenGPS field menu once (import of KML, ISO-XML, AgShare, templates)
+        public bool johanUpstreamJobMenu;
+        public void JohanImportMenu()
+        {
+            johanUpstreamJobMenu = true;
+            try { btnJobMenu_Click(btnJobMenu, EventArgs.Empty); }
+            finally { johanUpstreamJobMenu = false; }
+        }
+
         // Tap on the tractor: next symbol (arrow, dot, tractor), remembered in the settings
         public void JohanSymboolWissel()
         {
