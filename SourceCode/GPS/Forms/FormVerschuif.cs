@@ -100,6 +100,8 @@ namespace AgOpenGPS
 
             btnSlot = Knop(Width - S(14) - S(96) - S(10) - S(96), S(96), "Slot", "adjustments-horizontal_licht_64", () =>
             {
+                // locking and unlocking a line needs the code (once per session)
+                if (!mf.JohanCodeVragen(this, btnSlot)) return;
                 bool nu = !mf.JohanIsTrackLocked(mf.trk.idx);
                 mf.JohanSetTrackLocked(mf.trk.idx, nu);
                 mf.TimedMessageBox(1500, "Lijn", nu ? "Lijn vergrendeld: verschuiven uit" : "Lijn vrijgegeven");

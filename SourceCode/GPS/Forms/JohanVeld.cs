@@ -205,6 +205,17 @@ namespace AgOpenGPS
             return binnen * 2 > n;
         }
 
+        // ---- the code: asked once per session for the advanced settings and for locking lines
+        public bool johanCodeOk;
+        public bool JohanCodeVragen(System.Windows.Forms.IWin32Window owner, System.Windows.Forms.Control veld = null)
+        {
+            if (johanCodeOk) return true;
+            double v = FormGetal.Vraag(owner, "Code", "", 0, 999999, 0, 0, veld);
+            if ((int)v == Settings.Default.setDisplay_johanCode && v > 0) { johanCodeOk = true; return true; }
+            if (v > 0) TimedMessageBox(2000, "Code", "Dat is niet de code");
+            return false;
+        }
+
         // ---- headland beep: one tone when the tool (or a point so many metres ahead of it) crosses the headland line
         private bool johanInKop, johanKopBekend;
         public void JohanKopakkerPiep()

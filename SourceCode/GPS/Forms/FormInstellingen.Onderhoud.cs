@@ -45,17 +45,21 @@ namespace AgOpenGPS
                     Close();
                 }
             };
-            RijKnoppen(k, "Beheer", "Status en hulpmiddelen",
-                ("Beheer openen", beheerOpenen));
+            // The rows below are for Kasper: only in the advanced view (after the code)
+            if (Geavanceerd)
+            {
+                RijKnoppen(k, "Beheer", "Status en hulpmiddelen",
+                    ("Beheer openen", beheerOpenen));
 
-            // Change the code that protects the chapters marked "Achter de code"
-            RijKnoppen(k, "Code wijzigen", "De code voor de beschermde hoofdstukken",
-                ("Wijzigen", CodeWijzigen));
+                // Change the code that protects the advanced view and the line locks
+                RijKnoppen(k, "Code wijzigen", "De code voor geavanceerd en voor het slot op een lijn",
+                    ("Wijzigen", CodeWijzigen));
 
-            // The original AgOpenGPS windows, full screen, for everything this page does not cover
-            RijKnoppen(k, "Originele vensters", "Beeldvullend, voor als iets hierboven ontbreekt",
-                ("Configuratie", () => mf.BeheerOpenConfig()),
-                ("AgIO", () => mf.BeheerOpenAgIO()));
+                // The original AgOpenGPS windows, full screen, for everything this page does not cover
+                RijKnoppen(k, "Originele vensters", "Beeldvullend, voor als iets hierboven ontbreekt",
+                    ("Configuratie", () => mf.BeheerOpenConfig()),
+                    ("AgIO", () => mf.BeheerOpenAgIO()));
+            }
 
             // Shutting down: our own question, then the normal AgOpenGPS close path. The caller of
             // this page runs JohanAfsluitenUitvoeren() once it has closed.

@@ -2,6 +2,7 @@ using System;
 using AgLibrary.Johan;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using AgLibrary.Logging;
 using AgOpenGPS.Properties;
@@ -19,8 +20,12 @@ namespace AgOpenGPS
         private FlowLayoutPanel chips;
         private readonly List<Action> verversers = new List<Action>();
         private readonly List<Panel> kaarten = new List<Panel>();
-        private bool ontgrendeld;   // the code was entered once on this page
         private Control laatsteVeld;
+        private JohanRoundButton btnGeavanceerd;
+
+        // Gewoon = the chapters Johan uses; Geavanceerd (after the code) adds GPS en richting, Trekker,
+        // Sturen, Machine en relais and the maintenance rows for Kasper. The code is asked once per session.
+        protected bool Geavanceerd { get; private set; }
 
         private static int S(int px) => JohanTheme.S(px);
         private static string Komma(double v, int dec) => v.ToString(dec == 0 ? "0" : "0." + new string('0', dec), System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
@@ -32,11 +37,30 @@ namespace AgOpenGPS
             HoofdstukLijnenKopakker();
             HoofdstukVerbindingen();
             HoofdstukSchermGeluid();
-            HoofdstukGpsRichting();
-            HoofdstukTrekker();
-            HoofdstukSturen();
-            HoofdstukMachineRelais();
+            if (Geavanceerd)
+            {
+                HoofdstukGpsRichting();
+                HoofdstukTrekker();
+                HoofdstukSturen();
+                HoofdstukMachineRelais();
+            }
             HoofdstukOnderhoud();
+        }
+
+        // Throw the cards away and build them again (after switching gewoon/geavanceerd)
+        private void Herbouw()
+        {
+            int scroll = -body.AutoScrollPosition.Y;
+            body.SuspendLayout();
+            foreach (var k in kaarten) { body.Controls.Remove(k); k.Dispose(); }
+            kaarten.Clear();
+            verversers.Clear();
+            foreach (Control c in chips.Controls.OfType<Control>().ToArray()) { chips.Controls.Remove(c); c.Dispose(); }
+            BouwHoofdstukken();
+            Stapel();
+            body.ResumeLayout();
+            body.AutoScrollPosition = new Point(0, Math.Min(scroll, Math.Max(0, body.DisplayRectangle.Height - body.ClientSize.Height)));
+            Ververs();
         }
 
         public FormInstellingen(FormGPS formGPS)
@@ -60,6 +84,30 @@ namespace AgOpenGPS
             int x = S(40);
             Controls.Add(new Label { Text = "Instellingen", Font = JohanTheme.Font(28F, FontStyle.Bold), AutoSize = true, Location = new Point(x, S(28)) });
             Controls.Add(new Label { Text = "Alles op één pagina. Tik een hoofdstuk om ernaartoe te springen.", Font = JohanTheme.Font(11F), ForeColor = JohanTheme.Muted, AutoSize = true, Location = new Point(x + S(2), S(80)) });
+
+            // lock: gewoon <-> geavanceerd; the code is asked the first time per session
+            btnGeavanceerd = new JohanRoundButton
+            {
+                Text = "Geavanceerd",
+                Image = JohanSkin.Icon("settings_licht_64", 24),
+                TextImageRelation = TextImageRelation.ImageBeforeText,
+                Bounds = new Rectangle(Width - x - S(230), S(28), S(230), S(52)),
+                BackColor = JohanTheme.Panel,
+                ForeColor = JohanTheme.Text,
+                FlatStyle = FlatStyle.Flat,
+                Font = JohanTheme.Font(13F, FontStyle.Bold)
+            };
+            btnGeavanceerd.FlatAppearance.BorderSize = 0;
+            btnGeavanceerd.Click += (s, e) =>
+            {
+                if (!Geavanceerd && !mf.JohanCodeVragen(this, btnGeavanceerd)) return;
+                Geavanceerd = !Geavanceerd;
+                ZetSlot();
+                Herbouw();
+            };
+            Controls.Add(btnGeavanceerd);
+            Geavanceerd = false;
+            ZetSlot();
 
             chips = new FlowLayoutPanel { Bounds = new Rectangle(x, S(112), Width - 2 * x, S(52)), BackColor = JohanTheme.Bg, WrapContents = false, AutoScroll = false };
             Controls.Add(chips);
@@ -180,16 +228,20 @@ namespace AgOpenGPS
             return b;
         }
 
-        // the chapter card this control area belongs to asks for the code when it is marked
+        private void ZetSlot()
+        {
+            btnGeavanceerd.Text = Geavanceerd ? "Geavanceerd aan" : "Geavanceerd";
+            btnGeavanceerd.BackColor = Geavanceerd ? JohanTheme.Blue : JohanTheme.Panel;
+            btnGeavanceerd.ForeColor = Geavanceerd ? Color.White : JohanTheme.Text;
+        }
+
+        // protected chapters only exist in the advanced view, which needs the code to open; so a row may always act
         private bool Mag(Control vak)
         {
             Control c = vak;
             while (c != null && !(c is Panel p && kaarten.Contains(p))) c = c.Parent;
-            if (c == null || !(c.Tag is bool code) || !code || ontgrendeld) return true;
-            double v = FormGetal.Vraag(this, "Code", "", 0, 999999, 0, 0, laatsteVeld);
-            if ((int)v == Settings.Default.setDisplay_johanCode) { ontgrendeld = true; return true; }
-            mf.TimedMessageBox(2000, "Instellingen", "Dat is niet de code");
-            return false;
+            if (c == null || !(c.Tag is bool code) || !code || Geavanceerd) return true;
+            return mf.JohanCodeVragen(this, laatsteVeld);
         }
 
         private void Ververs() { foreach (var v in verversers) { try { v(); } catch { } } }
