@@ -119,29 +119,11 @@ namespace AgOpenGPS
                 return true;
             }
 
-            // which way is inside: try a short step from the first point on both sides
-            vec3 p0 = fence[0];
-            double sx0 = Math.Sin(glm.PIBy2 + p0.heading), cx0 = Math.Cos(glm.PIBy2 + p0.heading);
-            double sign = b.fenceLineEar.IsPointInPolygon(new vec2(p0.easting - sx0 * 0.5, p0.northing - cx0 * 0.5)) ? 1 : -1;
-
-            var res = new List<vec3>();
-            double distSq = breedte * breedte - 0.01;
-            for (int i = 0; i < fence.Count; i++)
-            {
-                var pt = new vec3(
-                    fence[i].easting - sign * Math.Sin(glm.PIBy2 + fence[i].heading) * breedte,
-                    fence[i].northing - sign * Math.Cos(glm.PIBy2 + fence[i].heading) * breedte,
-                    fence[i].heading);
-                bool ok = true;
-                for (int t = 0; t < fence.Count; t++)
-                {
-                    double dx = pt.easting - fence[t].easting, dy = pt.northing - fence[t].northing;
-                    if (dx * dx + dy * dy < distSq) { ok = false; break; }
-                }
-                if (!ok) continue;
-                if (res.Count > 0 && glm.Distance(pt, res[res.Count - 1]) < 1.0) continue;
-                res.Add(pt);
-            }
+            // which way is inside: the side where a short step lands inside the fence, by majority of a few points;
+            // afterwards the built line is checked the same way and flipped when it ended up outside
+            double sign = JohanBinnenkant(fence, 0.5);
+            var res = JohanGrensNaarBinnen(fence, breedte, sign);
+            if (res.Count >= 3 && !JohanMeestBinnen(fence, res)) res = JohanGrensNaarBinnen(fence, breedte, -sign);
             if (res.Count < 3)
             {
                 TimedMessageBox(2500, "Kopakker", "Te breed voor dit perceel");
@@ -161,6 +143,66 @@ namespace AgOpenGPS
             FileSaveHeadland();
             Log.EventWriter("Johan flow: headland built, width " + breedte.ToString("0.0") + " m, " + res.Count + " points");
             return true;
+        }
+
+        // Offset of every fence point sideways (sign +1 = left of the point heading), dropping points
+        // that come closer than the width to the fence (inner corners) and points under 1 m apart.
+        private static List<vec3> JohanGrensNaarBinnen(List<vec3> fence, double breedte, double sign)
+        {
+            var res = new List<vec3>();
+            double distSq = breedte * breedte - 0.01;
+            for (int i = 0; i < fence.Count; i++)
+            {
+                var pt = new vec3(
+                    fence[i].easting - sign * Math.Sin(glm.PIBy2 + fence[i].heading) * breedte,
+                    fence[i].northing - sign * Math.Cos(glm.PIBy2 + fence[i].heading) * breedte,
+                    fence[i].heading);
+                bool ok = true;
+                for (int t = 0; t < fence.Count; t++)
+                {
+                    double dx = pt.easting - fence[t].easting, dy = pt.northing - fence[t].northing;
+                    if (dx * dx + dy * dy < distSq) { ok = false; break; }
+                }
+                if (!ok) continue;
+                if (res.Count > 0 && glm.Distance(pt, res[res.Count - 1]) < 1.0) continue;
+                res.Add(pt);
+            }
+            return res;
+        }
+
+        // Ray casting on the fence itself, independent of the AgOpenGPS ear list
+        private static bool JohanInGrens(List<vec3> fence, double e, double n)
+        {
+            bool inside = false;
+            for (int i = 0, j = fence.Count - 1; i < fence.Count; j = i++)
+            {
+                double ei = fence[i].easting, ni = fence[i].northing, ej = fence[j].easting, nj = fence[j].northing;
+                if ((ni > n) != (nj > n) && e < (ej - ei) * (n - ni) / (nj - ni) + ei) inside = !inside;
+            }
+            return inside;
+        }
+
+        private static double JohanBinnenkant(List<vec3> fence, double stap)
+        {
+            int links = 0, n = Math.Min(9, fence.Count);
+            for (int k = 0; k < n; k++)
+            {
+                var p = fence[k * fence.Count / n];
+                double sx = Math.Sin(glm.PIBy2 + p.heading), cx = Math.Cos(glm.PIBy2 + p.heading);
+                if (JohanInGrens(fence, p.easting - sx * stap, p.northing - cx * stap)) links++;
+            }
+            return links * 2 > n ? 1 : -1;
+        }
+
+        private static bool JohanMeestBinnen(List<vec3> fence, List<vec3> pts)
+        {
+            int binnen = 0, n = Math.Min(15, pts.Count);
+            for (int k = 0; k < n; k++)
+            {
+                var p = pts[k * pts.Count / n];
+                if (JohanInGrens(fence, p.easting, p.northing)) binnen++;
+            }
+            return binnen * 2 > n;
         }
 
         // ---- shutdown from Beheer or the start screen: our own question, then the normal AgOpenGPS close
