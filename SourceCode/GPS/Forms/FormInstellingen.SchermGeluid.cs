@@ -35,7 +35,7 @@ namespace AgOpenGPS
                     ForeColor = JohanTheme.Text;
                     mf.TimedMessageBox(2500, "Scherm", "Het thema is gewisseld. Sluit en open de instellingen om alles in de nieuwe kleuren te zien.");
                 },
-                "Donker is rustiger in het donker, licht is beter te lezen in de zon; op de klok wisselt vanzelf om 7 en 19 uur.");
+                "Op de klok: licht van 7 tot 19 uur, daarbuiten donker");
 
             // CSound reads the settings only in its constructor and LoadSettings does not reread them,
             // so the running flags in mf.sounds are set as well, the way ConfigData does.
