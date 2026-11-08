@@ -110,8 +110,62 @@ namespace AgOpenGPS
         }
 
         // Called from FormBeheer; the handlers themselves are private to FormGPS
-        public void BeheerOpenConfig() => btnConfig_Click(btnJobMenu, EventArgs.Empty);
-        public void BeheerOpenSteer() => btnAutoSteerConfig_Click(btnAutoSteerConfig, EventArgs.Empty);
+        // Both settings windows open full screen from Beheer (same construction as the upstream
+        // button handlers in Controls.Designer.cs, only the window geometry is changed afterwards).
+        public void BeheerOpenConfig()
+        {
+            using (var form = new FormConfig(this))
+            {
+                JohanBeeldvullend(form);
+                form.ShowDialog(this);
+            }
+        }
+
+        public void BeheerOpenSteer()
+        {
+            Form fc = Application.OpenForms["FormSteer"];
+            if (fc != null) { fc.Focus(); fc.Close(); return; }
+            var form = new FormSteer(this);
+            // FormSteer_Load restores the saved location, so the geometry is applied after it
+            form.Load += (s, e) => JohanBeeldvullend((Form)s);
+            form.Show(this);
+            this.Activate();
+        }
+
+        // Full screen without border on the screen the main window is on; no saved location,
+        // no size limits. The upstream Designer files stay untouched: the layout is adjusted here
+        // after the form has been built.
+        private void JohanBeeldvullend(Form f)
+        {
+            f.StartPosition = FormStartPosition.Manual;
+            f.FormBorderStyle = FormBorderStyle.None;
+            f.MaximumSize = Size.Empty;
+            f.MinimumSize = Size.Empty;
+            f.Bounds = Screen.FromControl(this).Bounds;
+
+            if (f is FormConfig)
+            {
+                // Designer: tab1 Dock Top (fixed height) above panelBottom Dock Bottom; let the pages take the rest
+                if (f.Controls["tab1"] is TabControl tab) tab.Dock = DockStyle.Fill;
+            }
+            else if (f is FormSteer)
+            {
+                // The window is wider than the expanded state (918 px), so the right tab strip is
+                // visible anyway; the expand arrow would only shrink it again.
+                foreach (Control c in f.Controls.Find("btnExpand", true)) c.Visible = false;
+                // controls are placed absolutely for the 898 x 628 layout: centre that block on the screen
+                var union = Rectangle.Empty;
+                foreach (Control c in f.Controls)
+                    if (c.Visible) union = union.IsEmpty ? c.Bounds : Rectangle.Union(union, c.Bounds);
+                if (!union.IsEmpty)
+                {
+                    int dx = Math.Max(0, (f.ClientSize.Width - union.Width) / 2 - union.X);
+                    int dy = Math.Max(0, (f.ClientSize.Height - union.Height) / 2 - union.Y);
+                    if (dx != 0 || dy != 0)
+                        foreach (Control c in f.Controls) c.Location = new Point(c.Left + dx, c.Top + dy);
+                }
+            }
+        }
         public void BeheerOpenAgIO() => btnStartAgIO_Click(btnStartAgIO, EventArgs.Empty);
         public void BeheerOpenLog()
         {

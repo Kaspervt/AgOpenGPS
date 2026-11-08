@@ -37,15 +37,18 @@ namespace AgOpenGPS
                     if (w.Longitude < minLon) minLon = w.Longitude;
                     if (w.Longitude > maxLon) maxLon = w.Longitude;
                 }
-                double padLat = (maxLat - minLat) * 0.10 + 0.0002, padLon = (maxLon - minLon) * 0.10 + 0.0003;
-                minLat -= padLat; maxLat += padLat; minLon -= padLon; maxLon += padLon;
+                // wide margin (at least 500 m, or 60 % of the field size) so the whole view is photo
+                // at the usual zoom; the zoom level below keeps the bitmap within budget
+                double mLat = Math.Max((maxLat - minLat) * 0.6, 500.0 / 111320.0);
+                double mLon = Math.Max((maxLon - minLon) * 0.6, 500.0 / (111320.0 * Math.Cos(minLat * Math.PI / 180.0)));
+                minLat -= mLat; maxLat += mLat; minLon -= mLon; maxLon += mLon;
             }
             else
             {
                 Wgs84 here = AppModel.CurrentLatLon;
                 if (!isGPSPositionInitialized) { TimedMessageBox(2000, "Luchtfoto", "Nog geen GPS-positie"); return; }
-                double dLat = 400.0 / 111320.0;
-                double dLon = 400.0 / (111320.0 * Math.Cos(here.Latitude * Math.PI / 180.0));
+                double dLat = 700.0 / 111320.0;
+                double dLon = 700.0 / (111320.0 * Math.Cos(here.Latitude * Math.PI / 180.0));
                 minLat = here.Latitude - dLat; maxLat = here.Latitude + dLat;
                 minLon = here.Longitude - dLon; maxLon = here.Longitude + dLon;
             }

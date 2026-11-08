@@ -334,6 +334,10 @@ namespace AgLibrary.Johan
 
         private static void InstallTabDrawing(TabControl tabs)
         {
+            // Upstream hides some tab strips on purpose (FormConfig tab1, FormSteerWiz tabWiz:
+            // ItemSize height 0 or 1, the side buttons do the navigation). Drawing them ourselves
+            // would show the cryptic page names (tSum, vConfig, ...) again, so leave those alone.
+            if (tabs.ItemSize.Height <= 1) return;
             tabs.DrawMode = TabDrawMode.OwnerDrawFixed;
             tabs.SizeMode = TabSizeMode.Fixed;
             if (tabs.ItemSize.Height < 36) tabs.ItemSize = new Size(Math.Max(tabs.ItemSize.Width, 110), 36);

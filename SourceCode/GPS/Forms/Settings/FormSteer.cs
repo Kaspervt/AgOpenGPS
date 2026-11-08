@@ -370,7 +370,9 @@ namespace AgOpenGPS
             Properties.VehicleSettings.Default.setAS_ModeXTE = mf.vehicle.modeXTE;
             Properties.VehicleSettings.Default.setAS_ModeTime = mf.vehicle.modeTime;
 
-            Properties.Settings.Default.setWindow_steerSettingsLocation = Location;
+            // Johan fork: opened full screen (no border) the location is not worth remembering
+            if (FormBorderStyle != FormBorderStyle.None)
+                Properties.Settings.Default.setWindow_steerSettingsLocation = Location;
 
             Properties.ToolSettings.Default.setAS_uTurnCompensation = mf.vehicle.uturnCompensation;
 
