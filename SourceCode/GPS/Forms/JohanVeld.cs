@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -52,6 +53,31 @@ namespace AgOpenGPS
                 currentFieldDirectory = "";
                 return false;
             }
+        }
+
+        // Theme switch without a restart: settings, shared theme and skin, map colours, own screens
+        public bool johanReopenStart;
+        public void JohanThemeLive(bool light)
+        {
+            Settings.Default.setDisplay_isJohanLight = light;
+            Settings.Default.Save();
+            // own non-modal bars are simply closed; they come back in the new colours when opened
+            foreach (string n in new[] { "FormVerschuif", "FormGrens", "FormLijn" })
+            {
+                var f = System.Windows.Forms.Application.OpenForms[n];
+                if (f != null) { try { f.Close(); } catch { } }
+            }
+            JohanTheme.SwitchLive(light);
+            JohanLock.ApplyColours();
+            frameDayColor = Settings.Default.setDisplay_colorDayFrame.CheckColorFor255();
+            frameNightColor = Settings.Default.setDisplay_colorNightFrame.CheckColorFor255();
+            fieldColorDay = Settings.Default.setDisplay_colorFieldDay.CheckColorFor255();
+            fieldColorNight = Settings.Default.setDisplay_colorFieldNight.CheckColorFor255();
+            textColorDay = Settings.Default.setDisplay_colorTextDay.CheckColorFor255();
+            textColorNight = Settings.Default.setDisplay_colorTextNight.CheckColorFor255();
+            BackColor = JohanTheme.Bg;
+            RebuildJohanBars();
+            Log.EventWriter("Theme switched live, light = " + light);
         }
 
         // Tap on the tractor: next symbol (arrow, dot, tractor), remembered in the settings

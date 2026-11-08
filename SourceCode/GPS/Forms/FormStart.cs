@@ -122,10 +122,9 @@ namespace AgOpenGPS
             btnThema.FlatAppearance.BorderSize = 0;
             btnThema.Click += (s, e) =>
             {
-                Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
-                Settings.Default.Save();
-                Log.EventWriter("Theme switch on start screen, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
-                mf.johanRestartPending = true;
+                // live switch; this screen is rebuilt by FormGPS in the new colours
+                mf.JohanThemeLive(!Settings.Default.setDisplay_isJohanLight);
+                mf.johanReopenStart = true;
                 Close();
             };
             Controls.Add(btnThema);

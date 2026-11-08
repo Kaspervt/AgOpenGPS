@@ -55,6 +55,56 @@ namespace AgLibrary.Johan
         }
 
         public static bool IsInstalled { get; private set; }
+        private static SkinResourceManager current;
+
+        // Theme switch: every picture that came from here is looked up again (light <-> dark icons)
+        public static void ReskinAll(IEnumerable<Form> forms)
+        {
+            var oldIcons = new Dictionary<Bitmap, string>();
+            lock (iconCache)
+            {
+                foreach (var kv in iconCache) oldIcons[kv.Value] = kv.Key;
+                iconCache.Clear();
+            }
+            var oldRes = current?.SnapshotAndClear() ?? new Dictionary<Bitmap, string>();
+
+            Image Nieuw(Image img)
+            {
+                var b = img as Bitmap;
+                if (b == null) return null;
+                if (oldIcons.TryGetValue(b, out string key))
+                {
+                    int at = key.LastIndexOf('@');
+                    return Icon(key.Substring(0, at), int.Parse(key.Substring(at + 1)));
+                }
+                if (oldRes.TryGetValue(b, out string name) && current != null) return current.GetObject(name, null) as Image;
+                return null;
+            }
+
+            void Walk(Control c)
+            {
+                if (c == null || c.IsDisposed) return;
+                try
+                {
+                    if (c is ButtonBase bb && bb.Image != null) { var n = Nieuw(bb.Image); if (n != null) bb.Image = n; }
+                    else if (c is PictureBox pb && pb.Image != null) { var n = Nieuw(pb.Image); if (n != null) pb.Image = n; }
+                    else if (c is Label lb && lb.Image != null) { var n = Nieuw(lb.Image); if (n != null) lb.Image = n; }
+                    else if (c is ToolStrip ts)
+                        foreach (ToolStripItem it in ts.Items) WalkItem(it);
+                }
+                catch { }
+                foreach (Control child in c.Controls) Walk(child);
+            }
+
+            void WalkItem(ToolStripItem it)
+            {
+                try { if (it.Image != null) { var n = Nieuw(it.Image); if (n != null) it.Image = n; } } catch { }
+                if (it is ToolStripDropDownItem dd) foreach (ToolStripItem sub in dd.DropDownItems) WalkItem(sub);
+            }
+
+            foreach (var f in forms) Walk(f);
+            // the old bitmaps stay alive for anything not reached (GL textures hold their own copies)
+        }
 
         private static readonly Dictionary<string, Bitmap> iconCache = new Dictionary<string, Bitmap>();
 
@@ -65,8 +115,8 @@ namespace AgLibrary.Johan
 
         public static Bitmap Icon(string file, int size)
         {
+            string key = file + "@" + size;   // the requested name, so a theme switch can resolve it again
             file = Resolve(file);
-            string key = file + "@" + size;
             lock (iconCache)
             {
                 if (iconCache.TryGetValue(key, out Bitmap hit)) return hit;
@@ -105,7 +155,8 @@ namespace AgLibrary.Johan
                 var field = resourcesType.GetField("resourceMan", BindingFlags.Static | BindingFlags.NonPublic);
                 if (field == null) { Log.EventWriter("Johan skin: resourceMan field not found, skipped"); return; }
 
-                field.SetValue(null, new SkinResourceManager(resourcesType, dir, map, keepOriginal));
+                current = new SkinResourceManager(resourcesType, dir, map, keepOriginal);
+                field.SetValue(null, current);
                 IsInstalled = true;
                 Log.EventWriter("Johan skin installed from " + dir);
             }
@@ -132,6 +183,18 @@ namespace AgLibrary.Johan
 
             // names that are not images (strings, icons, textures we never touch) skip the lookup
             private readonly HashSet<string> passThrough = new HashSet<string>();
+
+            // for a theme switch: hand out what was cached (bitmap -> name) and start afresh
+            public Dictionary<Bitmap, string> SnapshotAndClear()
+            {
+                var snap = new Dictionary<Bitmap, string>();
+                lock (cache)
+                {
+                    foreach (var kv in cache) snap[kv.Value] = kv.Key;
+                    cache.Clear();
+                }
+                return snap;
+            }
 
             public override object GetObject(string name, CultureInfo culture)
             {

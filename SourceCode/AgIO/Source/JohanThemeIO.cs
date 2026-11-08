@@ -66,6 +66,15 @@ namespace AgIO
                 JohanSkinCore.Install(typeof(Properties.Resources), map, KeepOriginal);
                 JohanTheme.Install();
                 IsOn = true;
+                // AgOpenGPS writes the light/dark choice to the registry; follow it while running
+                bool last = JohanTheme.IsLight;
+                var volg = new System.Windows.Forms.Timer { Interval = 2000 };
+                volg.Tick += (s, e) =>
+                {
+                    bool nu = JohanTheme.ReadLightFromRegistry();
+                    if (nu != last) { last = nu; JohanTheme.SwitchLive(nu); }
+                };
+                volg.Start();
             }
             catch (Exception ex)
             {

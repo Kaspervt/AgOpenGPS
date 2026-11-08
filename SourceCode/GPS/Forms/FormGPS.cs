@@ -767,8 +767,12 @@ namespace AgOpenGPS
             {
                 BeginInvoke(new Action(() =>
                 {
-                    try { using (var start = new FormStart(this)) start.ShowDialog(this); }
-                    catch (Exception ex) { Log.EventWriter("Start screen failed: " + ex.Message); }
+                    do
+                    {
+                        johanReopenStart = false;
+                        try { using (var start = new FormStart(this)) start.ShowDialog(this); }
+                        catch (Exception ex) { Log.EventWriter("Start screen failed: " + ex.Message); }
+                    } while (johanReopenStart);   // theme switched on the start screen: show it again
                     if (johanRestartPending) JohanRestart();
                 }));
             }

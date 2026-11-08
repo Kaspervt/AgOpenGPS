@@ -35,6 +35,34 @@ namespace AgLibrary.Johan
                 Text = Color.FromArgb(15, 23, 42);
                 Muted = Color.FromArgb(71, 85, 105);
             }
+            else
+            {
+                Bg = Color.FromArgb(15, 23, 42);
+                Bar = Color.FromArgb(17, 28, 51);
+                Panel = Color.FromArgb(30, 41, 59);
+                PanelLight = Color.FromArgb(51, 65, 85);
+                Text = Color.FromArgb(248, 250, 252);
+                Muted = Color.FromArgb(148, 163, 184);
+            }
+        }
+
+        // Switch while running: new palette, every open window recoloured and its pictures re-resolved.
+        // The host rebuilds its own screens afterwards (they are skipped here, as always).
+        public static void SwitchLive(bool light)
+        {
+            Init(light);
+            WriteLightToRegistry(light);
+            var open = new List<Form>();
+            try { foreach (Form f in Application.OpenForms) open.Add(f); } catch { }
+            lock (tabIcons) { foreach (var b in tabIcons.Values) b.Dispose(); tabIcons.Clear(); }
+            JohanSkinCore.ReskinAll(open);
+            foreach (Form f in open)
+            {
+                if (f.IsDisposed || IsOwn(f)) continue;
+                try { Apply(f); if (f.FormBorderStyle != FormBorderStyle.None) DarkTitleBar(f); f.Invalidate(true); }
+                catch (Exception ex) { Log.EventWriter("Johan theme switch: " + f.Name + ": " + ex.Message); }
+            }
+            Log.EventWriter("Johan theme switched live, light = " + light);
         }
         public static readonly Color Green = Color.FromArgb(22, 163, 74);
         public static readonly Color Red = Color.FromArgb(220, 38, 38);

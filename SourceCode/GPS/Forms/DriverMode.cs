@@ -159,6 +159,22 @@ namespace AgOpenGPS
             };
         }
 
+        // Theme switch: throw the bars away and build them again in the new colours
+        public void RebuildJohanBars()
+        {
+            if (panelJohanTop == null) return;
+            foreach (Control c in new Control[] { panelJohanTop, panelJohanBottom, lblJBewerkt, lblJAfstand, btnJZoomIn, btnJZoomUit, btnJ3D })
+            {
+                if (c == null) continue;
+                Controls.Remove(c);
+                c.Dispose();
+            }
+            BuildJohanBars();
+            johanLayoutBusy = false;
+            LayoutJohan();
+            UpdateJohanBars();
+        }
+
         private void BuildJohanBars()
         {
             // ---- top bar
@@ -195,13 +211,7 @@ namespace AgOpenGPS
 
             // dark/light theme; the switch restarts the program so every window follows
             btnJThema = JohanButton("", JohanTheme.IsLight ? "moon_licht_64" : "sun_licht_64", 24, 10F, false);
-            btnJThema.Click += (s, e) =>
-            {
-                Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
-                Settings.Default.Save();
-                Log.EventWriter("Theme switch, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
-                JohanRestart();
-            };
+            btnJThema.Click += (s, e) => JohanThemeLive(!Settings.Default.setDisplay_isJohanLight);
 
             // settings in plain sight (the long press on the speed still works too)
             btnJInstellingen = JohanButton("", "settings_licht_64", 24, 10F, false);
