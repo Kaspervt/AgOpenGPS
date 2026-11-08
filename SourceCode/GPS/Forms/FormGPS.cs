@@ -769,6 +769,7 @@ namespace AgOpenGPS
                 {
                     try { using (var start = new FormStart(this)) start.ShowDialog(this); }
                     catch (Exception ex) { Log.EventWriter("Start screen failed: " + ex.Message); }
+                    if (johanRestartPending) JohanRestart();
                 }));
             }
         }
@@ -777,6 +778,14 @@ namespace AgOpenGPS
 
         // Centralized shutdown coordinator
         private bool isShuttingDown = false;
+
+        // Johan fork: theme switch = normal shutdown (field and settings saved), then a fresh start
+        public bool johanRestartPending;
+        public void JohanRestart()
+        {
+            johanRestartPending = true;
+            BeginInvoke(new Action(Close));
+        }
 
         private async void FormGPS_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -805,8 +814,8 @@ namespace AgOpenGPS
                 return;
             }
 
-            // Get user choice for shutdown behavior
-            int choice = SaveOrNot();
+            // Get user choice for shutdown behavior (a Johan restart never asks)
+            int choice = johanRestartPending ? 0 : SaveOrNot();
             if (choice == 1)
             {
                 // User cancelled shutdown
@@ -835,7 +844,8 @@ namespace AgOpenGPS
             finally
             {
                 // Ensure application exits even if shutdown fails
-                Application.Exit();
+                if (johanRestartPending) Program.Restart();
+                else Application.Exit();
             }
         }
 

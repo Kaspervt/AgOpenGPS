@@ -65,7 +65,7 @@ namespace AgOpenGPS
                         Text = selected ? name + "      " + mf.tool.width.ToString("0.0") + " m   (nu achter de trekker)" : name,
                         Size = new Size(listW - 24, 72),
                         Margin = new Padding(0, 0, 0, 10),
-                        BackColor = selected ? Color.FromArgb(30, 58, 95) : JohanTheme.Panel,
+                        BackColor = selected ? (JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95)) : JohanTheme.Panel,
                         ForeColor = JohanTheme.Text,
                         FlatStyle = FlatStyle.Flat,
                         Font = JohanTheme.Font(16F, FontStyle.Bold),

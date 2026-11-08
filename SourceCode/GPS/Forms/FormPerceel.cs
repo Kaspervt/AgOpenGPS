@@ -19,11 +19,11 @@ namespace AgOpenGPS
     {
         private readonly FormGPS mf;
 
-        private readonly Color bg = Color.FromArgb(15, 23, 42);
-        private readonly Color panel = Color.FromArgb(30, 41, 59);
-        private readonly Color selected = Color.FromArgb(30, 58, 95);
-        private readonly Color text = Color.FromArgb(248, 250, 252);
-        private readonly Color muted = Color.FromArgb(148, 163, 184);
+        private readonly Color bg = JohanTheme.Bg;
+        private readonly Color panel = JohanTheme.Panel;
+        private readonly Color selected = JohanTheme.IsLight ? Color.FromArgb(191, 219, 254) : Color.FromArgb(30, 58, 95);
+        private readonly Color text = JohanTheme.Text;
+        private readonly Color muted = JohanTheme.Muted;
 
         public bool WantsNewField { get; private set; }
 

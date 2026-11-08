@@ -199,8 +199,7 @@ namespace AgOpenGPS
                 Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
                 Settings.Default.Save();
                 Log.EventWriter("Theme switch, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
-                if (isJobStarted) { try { FileSaveEverythingBeforeClosingField().Wait(5000); } catch { } }
-                Application.Restart();
+                JohanRestart();
             };
 
             panelJohanTop.Controls.AddRange(new Control[] { btnJPerceel, lblJLijn, btnJWerktuig, lblJRtk, lblJTrekker, lblJSpeed, btnJLuchtfoto, btnJThema });

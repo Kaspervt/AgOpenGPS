@@ -53,7 +53,9 @@ namespace AgOpenGPS
             using (var path = Rounded(r, Radius))
             using (var b = new SolidBrush(fill)) g.FillPath(b, path);
 
-            Color fore = Enabled ? ForeColor : JohanTheme.Muted;
+            // disabled: muted grey on panels, pale grey on coloured (grey/green) buttons
+            bool onPanel = fill.ToArgb() == JohanTheme.Panel.ToArgb() || fill.ToArgb() == JohanTheme.PanelLight.ToArgb() || fill.ToArgb() == JohanTheme.Bg.ToArgb();
+            Color fore = Enabled ? ForeColor : (onPanel ? JohanTheme.Muted : Color.FromArgb(203, 213, 225));
             Image img = Image;
             Size ts = string.IsNullOrEmpty(Text) ? Size.Empty : TextRenderer.MeasureText(g, Text, Font, Size.Empty, TextFormatFlags.NoPadding);
             int iw = img?.Width ?? 0, ih = img?.Height ?? 0;

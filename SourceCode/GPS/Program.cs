@@ -19,6 +19,24 @@ namespace AgOpenGPS
         public static readonly bool IsPreRelease = Application.ProductVersion.Contains('-');
         public static readonly bool IsDevelopVersion = Application.ProductVersion == "1.0.0.0";
 
+        // Johan fork: a restart from inside the program (theme switch) must hand the single-instance
+        // mutex back first, otherwise the new instance sees "already running" and quits
+        public static void Restart()
+        {
+            try { Mutex.ReleaseMutex(); Mutex.Dispose(); } catch { }
+            // not Application.Restart(): that starts the new instance while this one still holds the
+            // UDP loopback port and the field files. A hidden shell waits a moment, then starts it.
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("cmd.exe",
+                    "/c ping -n 4 127.0.0.1 >nul & start \"\" \"" + Application.ExecutablePath + "\"")
+                { CreateNoWindow = true, UseShellExecute = false, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { Application.Restart(); return; }
+            Application.Exit();
+        }
+
         [STAThread]
         private static void Main()
         {

@@ -19,10 +19,11 @@ namespace AgOpenGPS
         private readonly FormGPS mf;
         private readonly Timer tick = new Timer { Interval = 500 };
 
-        private readonly Color bg = Color.FromArgb(15, 23, 42);
-        private readonly Color panel = Color.FromArgb(30, 41, 59);
-        private readonly Color text = Color.FromArgb(248, 250, 252);
-        private readonly Color muted = Color.FromArgb(148, 163, 184);
+        // palette follows the theme (light or dark)
+        private readonly Color bg = JohanTheme.Bg;
+        private readonly Color panel = JohanTheme.Panel;
+        private readonly Color text = JohanTheme.Text;
+        private readonly Color muted = JohanTheme.Muted;
         private readonly Color green = Color.FromArgb(22, 163, 74);
         private readonly Color amber = Color.FromArgb(245, 158, 11);
         private readonly Color red = Color.FromArgb(220, 38, 38);
@@ -124,7 +125,8 @@ namespace AgOpenGPS
                 Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
                 Settings.Default.Save();
                 Log.EventWriter("Theme switch on start screen, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
-                Application.Restart();
+                mf.johanRestartPending = true;
+                Close();
             };
             Controls.Add(btnThema);
             y += 40;
