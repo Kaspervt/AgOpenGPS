@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -27,7 +28,6 @@ namespace AgOpenGPS
         private readonly Color red = Color.FromArgb(220, 38, 38);
 
         private readonly StatusRow[] rows = new StatusRow[4];
-        private FlowLayoutPanel toolRow;
         private Label lblField;
 
         public FormStart(FormGPS formGPS)
@@ -108,6 +108,25 @@ namespace AgOpenGPS
             int y = 40;
 
             Controls.Add(new Label { Text = "Klaar om te rijden?", ForeColor = muted, AutoSize = true, Location = new Point(x, y) });
+
+            // light/dark switch, same as on the driving screen: saved in the settings, so it is remembered
+            var btnThema = new JohanRoundButton
+            {
+                Bounds = new Rectangle(w - 48 - 44, y - 8, 44, 44),
+                BackColor = panel,
+                FlatStyle = FlatStyle.Flat,
+                Image = JohanSkin.Icon(JohanTheme.IsLight ? "moon_licht_64" : "sun_licht_64", 24),
+                ImageAlign = ContentAlignment.MiddleCenter
+            };
+            btnThema.FlatAppearance.BorderSize = 0;
+            btnThema.Click += (s, e) =>
+            {
+                Settings.Default.setDisplay_isJohanLight = !Settings.Default.setDisplay_isJohanLight;
+                Settings.Default.Save();
+                Log.EventWriter("Theme switch on start screen, light = " + Settings.Default.setDisplay_isJohanLight + ", restarting");
+                Application.Restart();
+            };
+            Controls.Add(btnThema);
             y += 40;
 
             string[] names = { "GPS", "RTK-correcties", "Stuurprint", "Trekker" };
@@ -121,21 +140,9 @@ namespace AgOpenGPS
                 y += 74;
             }
 
-            y += 10;
-            Controls.Add(new Label { Text = "Werktuig", ForeColor = muted, AutoSize = true, Location = new Point(x, y) });
-            y += 32;
-            toolRow = new FlowLayoutPanel
-            {
-                Bounds = new Rectangle(x, y, rightW, 84),
-                BackColor = bg,
-                WrapContents = false,
-                AutoScroll = false
-            };
-            Controls.Add(toolRow);
-            FillTools();
-            y += 100;
+            // no tool choice here: the last tool and field load by themselves, switching is one tap on the driving screen
 
-            var btnGo = new Button
+            var btnGo = new JohanRoundButton
             {
                 Text = "Rijden",
                 Bounds = new Rectangle(x, h - 170, rightW, 90),
@@ -169,44 +176,6 @@ namespace AgOpenGPS
             Controls.Add(lblBeheer);
         }
 
-        private void FillTools()
-        {
-            toolRow.Controls.Clear();
-            if (!Directory.Exists(RegistrySettings.toolsDirectory)) return;
-
-            var files = Directory.GetFiles(RegistrySettings.toolsDirectory, "*.xml")
-                .Where(f => CSettingsMigration.IsSettingsType(f, "ToolSettings"))
-                .OrderBy(f => f)
-                .ToArray();
-
-            foreach (string f in files)
-            {
-                string name = Path.GetFileNameWithoutExtension(f);
-                bool selected = name == RegistrySettings.toolProfileName;
-                var b = new Button
-                {
-                    Text = name + (selected ? "\n" + mf.tool.width.ToString("0.0") + " m" : ""),
-                    Size = new Size(150, 76),
-                    Margin = new Padding(0, 0, 10, 0),
-                    BackColor = panel,
-                    ForeColor = text,
-                    FlatStyle = FlatStyle.Flat,
-                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                    Tag = name
-                };
-                b.FlatAppearance.BorderSize = 2;
-                b.FlatAppearance.BorderColor = selected ? green : panel;
-                b.Click += ToolButton_Click;
-                toolRow.Controls.Add(b);
-            }
-        }
-
-        private void ToolButton_Click(object sender, EventArgs e)
-        {
-            string name = (string)((Button)sender).Tag;
-            if (FormWerktuig.LoadTool(mf, name)) FillTools();
-        }
-
         private void UpdateStatus()
         {
             // GPS
@@ -232,9 +201,10 @@ namespace AgOpenGPS
             rows[3].Set(tractorOk ? green : amber,
                 tractorOk ? "Stuurhoek " + mf.mc.actualSteerAngleDegrees.ToString("0.0") + " graden" : "Wacht op de trekker");
 
-            lblField.Text = string.IsNullOrEmpty(mf.currentFieldDirectory)
+            lblField.Text = (string.IsNullOrEmpty(mf.currentFieldDirectory)
                 ? "Nog geen perceel"
-                : "Laatste perceel: " + mf.currentFieldDirectory;
+                : "Laatste perceel: " + mf.currentFieldDirectory)
+                + "     Werktuig: " + RegistrySettings.toolProfileName + " " + mf.tool.width.ToString("0.0") + " m";
         }
 
         protected override void OnPaintBackground(PaintEventArgs e)

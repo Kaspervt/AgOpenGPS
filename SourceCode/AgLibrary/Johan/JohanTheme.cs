@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using AgLibrary.Logging;
 
-namespace AgOpenGPS
+namespace AgLibrary.Johan
 {
-    // Johan fork: one colour theme over every window AgOpenGPS opens.
+    // Johan fork: one colour theme over every window AgOpenGPS or AgIO opens.
     // Nothing in the upstream forms is rewritten: a sweeper runs whenever a
     // window appears (modal or not) and recolours it. Neutral colours (greys,
     // whites, the lavender frame) become the dark canvas palette; signal
@@ -52,9 +52,32 @@ namespace AgOpenGPS
         private static readonly HashSet<Control> watched = new HashSet<Control>();
         private static Timer sweeper;
 
-        // Forms built for this fork already draw in the theme
-        private static bool IsOwn(Form f) => f is FormStart || f is FormPerceel || f is FormWerktuig
-                                             || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif;
+        // Forms built for this fork already draw in the theme; the host program says which
+        public static Func<Form, bool> IsOwnForm = f => false;
+        private static bool IsOwn(Form f) => IsOwnForm != null && IsOwnForm(f);
+
+        // Light or dark is chosen in AgOpenGPS and shared with AgIO through the registry key both already use
+        private const string RegPath = @"SOFTWARE\AgOpenGPS", RegLight = "JohanLight";
+
+        public static bool ReadLightFromRegistry()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegPath))
+                    return key != null && string.Equals(key.GetValue(RegLight) as string, "1");
+            }
+            catch { return false; }
+        }
+
+        public static void WriteLightToRegistry(bool light)
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(RegPath))
+                    key.SetValue(RegLight, light ? "1" : "0");
+            }
+            catch { }
+        }
 
         // Windows 10/11: dark title bar and frame for the dialogs that keep a border
         [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
@@ -242,7 +265,12 @@ namespace AgOpenGPS
                 if (IsNeutral(c.ForeColor)) c.ForeColor = Text;
             }
 
-            foreach (Control child in c.Controls) Apply(child);
+            // one stubborn control must not leave the rest of the window unthemed
+            foreach (Control child in c.Controls)
+            {
+                try { Apply(child); }
+                catch (Exception ex) { Log.EventWriter("Johan theme: " + child.GetType().Name + " " + child.Name + ": " + ex.Message); }
+            }
 
             // controls added later (dynamic buttons, lists) get themed too
             if (c.HasChildren || c is Form || c is Panel || c is TabPage || c is GroupBox)
@@ -323,7 +351,7 @@ namespace AgOpenGPS
                 if (tabIcons.TryGetValue(key, out Bitmap hit)) return hit;
                 try
                 {
-                    var mono = JohanSkin.Mono(img, Text);
+                    var mono = JohanSkinCore.Mono(img, Text);
                     tabIcons[key] = mono;
                     return mono;
                 }

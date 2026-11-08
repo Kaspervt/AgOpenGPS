@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -59,7 +60,7 @@ namespace AgOpenGPS
                 {
                     string name = Path.GetFileNameWithoutExtension(f);
                     bool selected = name == RegistrySettings.toolProfileName;
-                    var b = new Button
+                    var b = new JohanRoundButton
                     {
                         Text = selected ? name + "      " + mf.tool.width.ToString("0.0") + " m   (nu achter de trekker)" : name,
                         Size = new Size(listW - 24, 72),
@@ -79,7 +80,7 @@ namespace AgOpenGPS
                 }
             }
 
-            var terug = new Button
+            var terug = new JohanRoundButton
             {
                 Text = "Terug",
                 Bounds = new Rectangle(x, h - 100, 200, 64),

@@ -1,4 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 
@@ -58,7 +58,8 @@ namespace AgOpenGPS
         {
             if (!mf.mc.isOutOfBounds)
             {
-                GL.Color4(0, 0, 0, 0.8);
+                if (JohanLook.On) GL.Color4(JohanLook.BoundaryHalo.Red / 255f, JohanLook.BoundaryHalo.Green / 255f, JohanLook.BoundaryHalo.Blue / 255f, JohanLook.BoundaryHalo.Alpha / 255f);
+                else GL.Color4(0, 0, 0, 0.8);
                 GL.LineWidth(6);
 
                 for (int i = 0; i < bndList.Count; i++)
@@ -66,8 +67,8 @@ namespace AgOpenGPS
                     bndList[i].fenceLineEar.DrawPolygon();
                 }
 
-                GL.Color4(0.95f, 0.44f, 0.350f, 0.8f);
-                GL.LineWidth(2);
+                if (JohanLook.On) { GL.Color4(JohanLook.Boundary.Red / 255f, JohanLook.Boundary.Green / 255f, JohanLook.Boundary.Blue / 255f, 0.95f); GL.LineWidth(3); }
+                else { GL.Color4(0.95f, 0.44f, 0.350f, 0.8f); GL.LineWidth(2); }
 
                 for (int i = 0; i < bndList.Count; i++)
                 {
@@ -77,7 +78,8 @@ namespace AgOpenGPS
             else
             {
                 GL.LineWidth(mf.ABLine.lineWidth * 3);
-                GL.Color3(0.95f, 0.25f, 0.250f);
+                if (JohanLook.On) GL.Color3(JohanLook.OutOfBounds.Red / 255f, JohanLook.OutOfBounds.Green / 255f, JohanLook.OutOfBounds.Blue / 255f);
+                else GL.Color3(0.95f, 0.25f, 0.250f);
 
                 for (int i = 0; i < bndList.Count; i++)
                 {

@@ -33,6 +33,13 @@ namespace AgIO
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(RegistrySettings.culture);
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
+
+                    // Johan fork: with johan.lock next to the exe AgIO wears the same theme and icons as AgOpenGPS
+                    if (System.IO.File.Exists(System.IO.Path.Combine(Application.StartupPath, "johan.lock")))
+                    {
+                        JohanThemeIO.Install();
+                    }
+
                     Application.Run(new FormLoop());
                 }
             }

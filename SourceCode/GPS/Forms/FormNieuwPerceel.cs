@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -46,7 +47,7 @@ namespace AgOpenGPS
             {
                 var it = items[i];
                 int col = i % 2, row = i / 2;
-                var card = new Button
+                var card = new JohanRoundButton
                 {
                     Bounds = new Rectangle(x + col * (cardW + gap), top + row * (cardH + gap), cardW, cardH),
                     BackColor = JohanTheme.Panel,
@@ -70,7 +71,7 @@ namespace AgOpenGPS
                 Controls.Add(card);
             }
 
-            var terug = new Button
+            var terug = new JohanRoundButton
             {
                 Text = "Terug",
                 Bounds = new Rectangle(x, h - 100, 200, 64),

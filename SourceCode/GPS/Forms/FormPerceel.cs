@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -76,7 +77,7 @@ namespace AgOpenGPS
 
             foreach (var rij in LeesPercelen())
             {
-                var b = new Button
+                var b = new JohanRoundButton
                 {
                     Size = new Size(listW - 24, 72),
                     Margin = new Padding(0, 0, 0, 10),
@@ -98,7 +99,7 @@ namespace AgOpenGPS
                 lijst.Controls.Add(b);
             }
 
-            var terug = new Button
+            var terug = new JohanRoundButton
             {
                 Text = "Terug",
                 Bounds = new Rectangle(x, h - 100, 200, 64),
@@ -111,7 +112,7 @@ namespace AgOpenGPS
             terug.Click += (s, e) => Close();
             Controls.Add(terug);
 
-            var nieuw = new Button
+            var nieuw = new JohanRoundButton
             {
                 Text = "Nieuw perceel of gewoon rijden",
                 Bounds = new Rectangle(w - x - 420, h - 100, 420, 64),

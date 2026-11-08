@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -24,7 +25,9 @@ namespace AgOpenGPS
 
         private Panel panelJohanTop, panelJohanBottom;
         private Button btnJPerceel, btnJWerktuig, btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto, btnJLuchtfoto, btnJThema;
-        private Label lblJLijn, lblJRtk, lblJTrekker, lblJSpeed, lblJBewerkt;
+        private Label lblJLijn, lblJSpeed;
+        private JohanPill lblJRtk, lblJTrekker, lblJBewerkt, lblJAfstand;
+        private JohanRoundButton btnJZoomIn, btnJZoomUit;
         private Timer johanTick;
         private Control[] johanSectionButtons;
         private bool johanLayoutBusy;
@@ -123,7 +126,7 @@ namespace AgOpenGPS
 
         private Button JohanButton(string text, string icon, int iconSize, float fontSize, bool iconAbove)
         {
-            var b = new Button
+            var b = new JohanRoundButton
             {
                 Text = text,
                 BackColor = JohanTheme.Panel,
@@ -160,21 +163,21 @@ namespace AgOpenGPS
             // ---- top bar
             panelJohanTop = new Panel { BackColor = JohanTheme.Bar, Visible = false };
 
-            btnJPerceel = JohanButton("Kies perceel", "polygon_licht_64", 22, 12F, false);
+            btnJPerceel = JohanButton("Kies perceel", "polygon_licht_64", 24, 14F, false);
             btnJPerceel.TextAlign = ContentAlignment.MiddleLeft;
             btnJPerceel.Padding = new Padding(8, 0, 8, 0);
             btnJPerceel.Click += (s, e) => btnJobMenu_Click(btnJobMenu, EventArgs.Empty);
 
-            lblJLijn = JohanLabel("", 12F, FontStyle.Regular, JohanTheme.Muted);
+            lblJLijn = JohanLabel("", 14F, FontStyle.Regular, JohanTheme.Text);
 
-            btnJWerktuig = JohanButton("Werktuig", "tool_licht_64", 22, 12F, false);
+            btnJWerktuig = JohanButton("Werktuig", "tool_licht_64", 24, 14F, false);
             btnJWerktuig.TextAlign = ContentAlignment.MiddleLeft;
             btnJWerktuig.Padding = new Padding(8, 0, 8, 0);
             btnJWerktuig.Click += (s, e) => { using (var f = new FormWerktuig(this)) f.ShowDialog(this); };
 
-            lblJRtk = JohanLabel("● RTK", 12F, FontStyle.Regular, JohanTheme.Red);
-            lblJTrekker = JohanLabel("● Trekker", 12F, FontStyle.Regular, JohanTheme.Red);
-            lblJSpeed = JohanLabel("0,0 km/u", 20F, FontStyle.Bold, JohanTheme.Text);
+            lblJRtk = new JohanPill { Text = "RTK", Font = JohanTheme.Font(14F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = Color.Transparent, Dot = JohanTheme.Red };
+            lblJTrekker = new JohanPill { Text = "Trekker", Font = JohanTheme.Font(14F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = Color.Transparent, Dot = JohanTheme.Red };
+            lblJSpeed = JohanLabel("0,0 km/u", 22F, FontStyle.Bold, JohanTheme.Text);
             lblJSpeed.TextAlign = ContentAlignment.MiddleRight;
 
             // long press on the speed block = unlock
@@ -228,12 +231,19 @@ namespace AgOpenGPS
             panelJohanBottom.Controls.AddRange(new Control[] { btnJAndereLijn, btnJVerschuif, btnJKopakker, btnJAuto });
             Controls.Add(panelJohanBottom);
 
-            // ---- small overlay bottom right of the map
-            lblJBewerkt = JohanLabel("", 10F, FontStyle.Regular, JohanTheme.Text);
-            lblJBewerkt.BackColor = JohanTheme.Bg;
-            lblJBewerkt.TextAlign = ContentAlignment.MiddleCenter;
-            lblJBewerkt.Visible = false;
+            // ---- overlays over the map (separate windows above the OpenGL view, as in the canvas)
+            lblJBewerkt = new JohanPill { Font = JohanTheme.Font(13F), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Visible = false };
             Controls.Add(lblJBewerkt);
+            lblJAfstand = new JohanPill { Font = JohanTheme.Font(20F, FontStyle.Bold), ForeColor = JohanTheme.Text, Fill = JohanTheme.Bg, Visible = false };
+            Controls.Add(lblJAfstand);
+            btnJZoomIn = (JohanRoundButton)JohanButton("", "zoom-in_licht_64", 28, 10F, false);
+            btnJZoomIn.BackColor = JohanTheme.Bg; btnJZoomIn.Radius = 12; btnJZoomIn.Visible = false;
+            btnJZoomIn.Click += (s, e) => { camera.ZoomIn(); SetZoom(); };
+            btnJZoomUit = (JohanRoundButton)JohanButton("", "zoom-out_licht_64", 28, 10F, false);
+            btnJZoomUit.BackColor = JohanTheme.Bg; btnJZoomUit.Radius = 12; btnJZoomUit.Visible = false;
+            btnJZoomUit.Click += (s, e) => { camera.ZoomOut(); SetZoom(); };
+            Controls.Add(btnJZoomIn);
+            Controls.Add(btnJZoomUit);
         }
 
         // Aerial photo: off = keep the loaded map aside; on = restore it, load it from the field folder,
@@ -253,7 +263,9 @@ namespace AgOpenGPS
             if (fromDisk != null) { worldGrid.BingMap = fromDisk; return; }
             Form open = Application.OpenForms["FormMap"];
             if (open != null) { open.Focus(); return; }
-            new FormMap(this).Show(this);
+            // no photo yet: the map window fetches one for this field by itself and closes again
+            var map = new FormMap(this) { AutoCapture = true };
+            map.Show(this);
         }
 
 
@@ -300,10 +312,10 @@ namespace AgOpenGPS
                 lblJLijn.Bounds = new Rectangle(x, y, 220, bh); x += 232;
                 btnJWerktuig.Bounds = new Rectangle(x, y, 260, bh);
 
-                lblJSpeed.Bounds = new Rectangle(w - 16 - 200, 8, 200, JohanTopH - 16);
-                lblJTrekker.Bounds = new Rectangle(w - 16 - 200 - 130, y, 130, bh);
-                lblJRtk.Bounds = new Rectangle(w - 16 - 200 - 130 - 150, y, 150, bh);
-                btnJThema.Bounds = new Rectangle(w - 16 - 200 - 130 - 150 - 12 - bh, y, bh, bh);
+                lblJSpeed.Bounds = new Rectangle(w - 16 - 210, 8, 210, JohanTopH - 16);
+                lblJTrekker.Bounds = new Rectangle(w - 16 - 210 - 150, y, 150, bh);
+                lblJRtk.Bounds = new Rectangle(w - 16 - 210 - 150 - 210, y, 210, bh);
+                btnJThema.Bounds = new Rectangle(w - 16 - 210 - 150 - 210 - 12 - bh, y, bh, bh);
                 btnJLuchtfoto.Bounds = new Rectangle(btnJThema.Left - 8 - bh, y, bh, bh);
 
                 // bottom bar: 1fr 1fr 1fr 2fr, 12 px gaps, 14/16 px padding
@@ -315,7 +327,10 @@ namespace AgOpenGPS
                 btnJKopakker.Bounds = new Rectangle(bx, top, unit, bhh); bx += unit + gap;
                 btnJAuto.Bounds = new Rectangle(bx, top, w - pad - bx, bhh);
 
-                lblJBewerkt.Bounds = new Rectangle(w - 20 - 260, h - JohanBottomH - 16 - 34, 260, 34);
+                lblJBewerkt.Bounds = new Rectangle(w - 20 - 260, h - JohanBottomH - 16 - 40, 260, 40);
+                lblJAfstand.Bounds = new Rectangle((w - 420) / 2, JohanTopH + 20, 420, 56);
+                btnJZoomIn.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20, 56, 56);
+                btnJZoomUit.Bounds = new Rectangle(w - 20 - 56, JohanTopH + 20 + 56 + 10, 56, 56);
 
                 // original chrome away
                 panelLeft.Visible = false;
@@ -335,9 +350,14 @@ namespace AgOpenGPS
                 panelJohanTop.Visible = true;
                 panelJohanBottom.Visible = true;
                 lblJBewerkt.Visible = isJobStarted;
+                btnJZoomIn.Visible = true;
+                btnJZoomUit.Visible = true;
                 panelJohanTop.BringToFront();
                 panelJohanBottom.BringToFront();
                 lblJBewerkt.BringToFront();
+                lblJAfstand.BringToFront();
+                btnJZoomIn.BringToFront();
+                btnJZoomUit.BringToFront();
             }
             finally { johanLayoutBusy = false; }
         }
@@ -348,6 +368,9 @@ namespace AgOpenGPS
             panelJohanTop.Visible = false;
             panelJohanBottom.Visible = false;
             lblJBewerkt.Visible = false;
+            lblJAfstand.Visible = false;
+            btnJZoomIn.Visible = false;
+            btnJZoomUit.Visible = false;
             menuStrip1.Visible = true;
             panelControlBox.Visible = true;
             panelLeft.Visible = true;
@@ -390,16 +413,30 @@ namespace AgOpenGPS
 
             int fq = pn.fixQuality;
             bool gpsAlive = fq > 0 && sentenceCounter < 20;
-            if (!gpsAlive) { lblJRtk.ForeColor = JohanTheme.Red; lblJRtk.Text = "●  Geen GPS"; }
-            else if (fq == 4) { lblJRtk.ForeColor = JohanTheme.Green; lblJRtk.Text = "●  RTK " + pn.age.ToString("0") + " s"; }
-            else if (fq == 5) { lblJRtk.ForeColor = JohanTheme.Amber; lblJRtk.Text = "●  RTK float"; }
-            else if (fq == 8) { lblJRtk.ForeColor = JohanTheme.Green; lblJRtk.Text = "●  Simulator"; }
-            else { lblJRtk.ForeColor = JohanTheme.Amber; lblJRtk.Text = "●  GPS zonder RTK"; }
+            Color rtkKleur; string rtkTekst;
+            if (!gpsAlive) { rtkKleur = JohanTheme.Red; rtkTekst = "Geen GPS"; }
+            else if (fq == 4) { rtkKleur = JohanTheme.Green; rtkTekst = "RTK " + pn.age.ToString("0") + " s"; }
+            else if (fq == 5) { rtkKleur = JohanTheme.Amber; rtkTekst = "RTK float"; }
+            else if (fq == 8) { rtkKleur = JohanTheme.Green; rtkTekst = "Simulator"; }
+            else { rtkKleur = JohanTheme.Amber; rtkTekst = "GPS zonder RTK"; }
+            if (lblJRtk.Dot != rtkKleur || lblJRtk.Text != rtkTekst) { lblJRtk.Dot = rtkKleur; lblJRtk.Text = rtkTekst; lblJRtk.Invalidate(); }
 
             // the counter only runs inside the position loop, so without GPS it says nothing
             bool steerOk = gpsAlive && steerModuleConnectedCounter < 30;
-            lblJTrekker.ForeColor = steerOk ? JohanTheme.Green : JohanTheme.Red;
-            lblJTrekker.Text = "●  Trekker";
+            Color trekkerKleur = steerOk ? JohanTheme.Green : JohanTheme.Red;
+            if (lblJTrekker.Dot != trekkerKleur) { lblJTrekker.Dot = trekkerKleur; lblJTrekker.Invalidate(); }
+
+            // distance to the line, as the pill in the canvas (avgPivDistance is the smoothed cross-track in mm)
+            bool lijnActief = isJobStarted && (trk.idx > -1 || ct.isContourBtnOn);
+            if (lijnActief)
+            {
+                double cmAf = avgPivDistance * 0.1;
+                int cmAbs = (int)Math.Round(Math.Abs(cmAf));
+                string afst = cmAbs == 0 ? "op de lijn" : cmAbs + " cm " + (cmAf > 0 ? "rechts van de lijn" : "links van de lijn");
+                if (cmAbs > 999) afst = "ver van de lijn";
+                if (lblJAfstand.Text != afst) lblJAfstand.Text = afst;
+            }
+            if (lblJAfstand.Visible != lijnActief) lblJAfstand.Visible = lijnActief;
 
             lblJSpeed.Text = SpeedKPH.Replace('.', ',') + " km/u";
 

@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.IO;
+using AgLibrary.Johan;
 using System.Windows.Forms;
 using AgLibrary.Logging;
 using AgOpenGPS.Properties;
@@ -27,6 +28,8 @@ namespace AgOpenGPS
             s.setDisplay_isDriverMode = true;
             s.setDisplay_isStartScreen = true;
             s.setDisplay_isJohanIcons = true;
+            // Johan turns himself: no U-turn and sideways-skip arrows on the map
+            var f = s.setFeatures; f.isUTurnOn = false; f.isLateralOn = false; f.isYouTurnOn = false; s.setFeatures = f;
             Log.EventWriter("Johan lock: driver setup enforced (" + LockPath + ")");
         }
 
@@ -43,6 +46,10 @@ namespace AgOpenGPS
             s.setDisplay_colorFieldNight = JohanTheme.FieldGround;
             s.setDisplay_colorFieldDay = JohanTheme.FieldGround;
             s.setMenu_isGridOn = false;
+            s.setDisplay_isTextureOn = false;                                   // flat ground, no grain
+            s.setDisplay_colorSectionsDay = System.Drawing.Color.FromArgb(22, 163, 74);   // worked area green
+            s.setDisplay_colorVehicle = JohanTheme.Blue;
+            JohanLook.On = true;
         }
     }
 }

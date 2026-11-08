@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -61,7 +62,7 @@ namespace AgOpenGPS
 
         private Button Knop(Panel card, Rectangle r, string tekst, string icon, Action actie)
         {
-            var b = new Button
+            var b = new JohanRoundButton
             {
                 Bounds = r,
                 Text = "  " + tekst,
@@ -121,7 +122,7 @@ namespace AgOpenGPS
             lblStatus = new Label { Font = JohanTheme.Font(12F), ForeColor = JohanTheme.Text, AutoSize = false, Bounds = new Rectangle(24, 64, cardW - 48, cardH - 80) };
             c4.Controls.Add(lblStatus);
 
-            var terug = new Button
+            var terug = new JohanRoundButton
             {
                 Text = "Terug naar het rijscherm",
                 Bounds = new Rectangle(x, h - 96, 360, 64),

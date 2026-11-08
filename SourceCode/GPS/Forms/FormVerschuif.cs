@@ -1,4 +1,5 @@
 using System;
+using AgLibrary.Johan;
 using System.Drawing;
 using System.Windows.Forms;
 using AgOpenGPS.Properties;
@@ -46,7 +47,7 @@ namespace AgOpenGPS
 
         private Button Knop(int x, int wdt, string tekst, string icon, Action actie)
         {
-            var b = new Button
+            var b = new JohanRoundButton
             {
                 Bounds = new Rectangle(x, 14, wdt, Height - 28),
                 Text = tekst,

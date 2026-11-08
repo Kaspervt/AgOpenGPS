@@ -1,21 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-using System.Windows.Forms;
-using AgLibrary.Logging;
+using AgLibrary.Johan;
 
 namespace AgOpenGPS
 {
-    // Johan fork: icon skin.
-    // Swaps the generated Resources' ResourceManager for one that answers known
-    // button images with Tabler-based PNGs from <exe>\johan-icons\, scaled to the
-    // size of the original image so no layout changes. Everything else falls through
-    // to the embedded resources, so upstream code and designer files stay untouched.
+    // Johan fork: icon skin for AgOpenGPS. The mechanics live in AgLibrary.Johan.JohanSkinCore
+    // (shared with AgIO); this class holds the hand-picked icon map for the AgOpenGPS buttons.
     public static class JohanSkin
     {
         // resource name -> icon file (without .png) in johan-icons
@@ -204,181 +195,12 @@ namespace AgOpenGPS
             return img.Width > 160 || img.Height > 160;
         }
 
-        // Dark strokes of the original picture become theme-text strokes, light fills a faint tint:
-        // the same icon, but in the single-colour line look of the rest of the theme
-        public static Bitmap Mono(Image src, Color ink)
-        {
-            var bmp = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            using (var tmp = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
-            {
-                using (var g = Graphics.FromImage(tmp)) g.DrawImageUnscaled(src, 0, 0);
-                var rect = new Rectangle(0, 0, tmp.Width, tmp.Height);
-                var din = tmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                var dout = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                try
-                {
-                    int n = Math.Abs(din.Stride) * tmp.Height;
-                    var px = new byte[n];
-                    System.Runtime.InteropServices.Marshal.Copy(din.Scan0, px, 0, n);
-                    var outPx = new byte[n];
-                    for (int i = 0; i < n; i += 4)
-                    {
-                        int b = px[i], gch = px[i + 1], r = px[i + 2], a = px[i + 3];
-                        if (a < 8) continue;
-                        double lum = (0.299 * r + 0.587 * gch + 0.114 * b) / 255.0;
-                        double sat = (Math.Max(r, Math.Max(gch, b)) - Math.Min(r, Math.Min(gch, b))) / 255.0;
-                        // dark or strongly coloured = ink, near-white = faint
-                        double w = Math.Max(1.0 - lum, sat * 0.8);
-                        int na = (int)(a * (0.22 + 0.78 * Math.Min(1.0, w)));
-                        // premultiplied? no: Format32bppArgb is straight alpha
-                        outPx[i] = ink.B; outPx[i + 1] = ink.G; outPx[i + 2] = ink.R; outPx[i + 3] = (byte)na;
-                    }
-                    System.Runtime.InteropServices.Marshal.Copy(outPx, 0, dout.Scan0, n);
-                }
-                finally { tmp.UnlockBits(din); bmp.UnlockBits(dout); }
-            }
-            return bmp;
-        }
+        public static bool IsInstalled => JohanSkinCore.IsInstalled;
 
-        public static bool IsInstalled { get; private set; }
+        public static void Install() => JohanSkinCore.Install(typeof(Properties.Resources), map, KeepOriginal);
 
-        private static readonly Dictionary<string, Bitmap> iconCache = new Dictionary<string, Bitmap>();
+        public static Bitmap Icon(string file, int size) => JohanSkinCore.Icon(file, size);
 
-        // A Tabler icon from johan-icons (file name without .png) scaled to a square of the given size,
-        // for the fork's own buttons. Null when the file is missing, so callers fall back to text only.
-        // In the light theme the white ("licht") icons become the dark ones
-        private static string Resolve(string file) => JohanTheme.IsLight ? file.Replace("_licht_", "_donker_") : file;
-
-        public static Bitmap Icon(string file, int size)
-        {
-            file = Resolve(file);
-            string key = file + "@" + size;
-            lock (iconCache)
-            {
-                if (iconCache.TryGetValue(key, out Bitmap hit)) return hit;
-                string path = Path.Combine(Application.StartupPath, "johan-icons", file + ".png");
-                if (!File.Exists(path)) return null;
-                try
-                {
-                    using (var src = new Bitmap(path))
-                    {
-                        var bmp = new Bitmap(size, size);
-                        using (var g = Graphics.FromImage(bmp))
-                        {
-                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                            g.SmoothingMode = SmoothingMode.AntiAlias;
-                            g.Clear(Color.Transparent);
-                            g.DrawImage(src, 0, 0, size, size);
-                        }
-                        iconCache[key] = bmp;
-                        return bmp;
-                    }
-                }
-                catch { return null; }
-            }
-        }
-
-        public static void Install()
-        {
-            if (IsInstalled) return;
-            try
-            {
-                string dir = Path.Combine(Application.StartupPath, "johan-icons");
-                if (!Directory.Exists(dir)) { Log.EventWriter("Johan skin: no johan-icons folder, skipped"); return; }
-
-                var field = typeof(Properties.Resources).GetField("resourceMan", BindingFlags.Static | BindingFlags.NonPublic);
-                if (field == null) { Log.EventWriter("Johan skin: resourceMan field not found, skipped"); return; }
-
-                field.SetValue(null, new SkinResourceManager(dir));
-                IsInstalled = true;
-                Log.EventWriter("Johan skin installed from " + dir);
-            }
-            catch (Exception ex)
-            {
-                Log.EventWriter("Johan skin failed: " + ex.Message);
-            }
-        }
-
-        private class SkinResourceManager : ResourceManager
-        {
-            private readonly string dir;
-            private readonly Dictionary<string, Bitmap> cache = new Dictionary<string, Bitmap>();
-
-            public SkinResourceManager(string iconDir)
-                : base("AgOpenGPS.Properties.Resources", typeof(Properties.Resources).Assembly)
-            {
-                dir = iconDir;
-            }
-
-            // names that are not images (strings, icons, textures we never touch) skip the lookup
-            private readonly HashSet<string> passThrough = new HashSet<string>();
-
-            public override object GetObject(string name, CultureInfo culture)
-            {
-                // Hot path: upstream reads Resources.X inside timers and paint code, and every
-                // base.GetObject deserialises a fresh Bitmap. Answer from the cache first.
-                lock (cache)
-                {
-                    if (cache.TryGetValue(name, out Bitmap hit)) return hit;
-                    if (passThrough.Contains(name)) return base.GetObject(name, culture);
-                }
-
-                object original = base.GetObject(name, culture);
-                if (!(original is Image origImg))
-                {
-                    lock (cache) passThrough.Add(name);
-                    return original;
-                }
-
-                Bitmap result = null;
-                if (!map.TryGetValue(name, out string file))
-                {
-                    // no hand-picked icon: keep textures and illustrations, restyle small button pictures
-                    if (KeepOriginal(name, origImg)) result = origImg as Bitmap ?? new Bitmap(origImg);
-                    else
-                    {
-                        try { result = Mono(origImg, JohanTheme.Text); }
-                        catch { result = origImg as Bitmap ?? new Bitmap(origImg); }
-                    }
-                }
-                else
-                {
-                    string path = Path.Combine(dir, Resolve(file) + ".png");
-                    if (File.Exists(path))
-                    {
-                        var size = origImg.Size;
-                        try
-                        {
-                            using (var src = new Bitmap(path))
-                            {
-                                var bmp = new Bitmap(size.Width, size.Height);
-                                using (var g = Graphics.FromImage(bmp))
-                                {
-                                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                                    g.Clear(Color.Transparent);
-                                    // keep the icon square and centered inside non-square originals
-                                    int s = Math.Min(size.Width, size.Height);
-                                    g.DrawImage(src, (size.Width - s) / 2, (size.Height - s) / 2, s, s);
-                                }
-                                result = bmp;
-                            }
-                        }
-                        catch { result = null; }
-                    }
-                    if (result == null) result = origImg as Bitmap ?? new Bitmap(origImg);
-                }
-
-                // the deserialised original is not handed out, so free it
-                if (!ReferenceEquals(result, origImg)) origImg.Dispose();
-
-                lock (cache)
-                {
-                    if (cache.TryGetValue(name, out Bitmap raced)) { if (!ReferenceEquals(raced, result)) result.Dispose(); return raced; }
-                    cache[name] = result;
-                }
-                return result;
-            }
-        }
+        public static Bitmap Mono(Image src, Color ink) => JohanSkinCore.Mono(src, ink);
     }
 }

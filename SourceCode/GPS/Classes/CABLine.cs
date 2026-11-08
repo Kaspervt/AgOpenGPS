@@ -364,33 +364,36 @@ namespace AgOpenGPS
 
             // Draw AB Points
             CTrk track = mf.trk.gArr[mf.trk.idx];
-            GLW.SetPointSize(8.0f);
-            GLW.BeginPointsPrimitive();
-
-            GLW.SetColor(pointBCyan);
-            GLW.Vertex2(track.ptB.ToGeoCoord());
-            GLW.SetColor(pointARed);
-            GLW.Vertex2(track.ptA.ToGeoCoord());
-            GLW.EndPrimitive();
-
-            GLW.DrawPoint(track.ptA.ToGeoCoord());
-
-            if (!isMakingABLine)
+            if (!JohanLook.On)
             {
-                mf.font.DrawText3D(track.ptA.easting, track.ptA.northing, "&A", mf.camHeading);
-                mf.font.DrawText3D(track.ptB.easting, track.ptB.northing, "&B", mf.camHeading);
+                GLW.SetPointSize(8.0f);
+                GLW.BeginPointsPrimitive();
+
+                GLW.SetColor(pointBCyan);
+                GLW.Vertex2(track.ptB.ToGeoCoord());
+                GLW.SetColor(pointARed);
+                GLW.Vertex2(track.ptA.ToGeoCoord());
+                GLW.EndPrimitive();
+
+                GLW.DrawPoint(track.ptA.ToGeoCoord());
+
+                if (!isMakingABLine)
+                {
+                    mf.font.DrawText3D(track.ptA.easting, track.ptA.northing, "&A", mf.camHeading);
+                    mf.font.DrawText3D(track.ptB.easting, track.ptB.northing, "&B", mf.camHeading);
+                }
+
+                GLW.SetPointSize(1.0f);
+
+                //Draw reference AB line
+                GeoCoord[] abEndPoints = { track.endPtA.ToGeoCoord(), track.endPtB.ToGeoCoord() };
+                GLW.SetLineWidth(4.0f);
+                GLW.EnableLineStipple();
+                GLW.SetLineStipple(1, 0x0F00);
+                GLW.SetColor(referenceLineRed);
+                GLW.DrawLinesPrimitive(abEndPoints);
+                GLW.DisableLineStipple();
             }
-
-            GLW.SetPointSize(1.0f);
-
-            //Draw reference AB line
-            GeoCoord[] abEndPoints = { track.endPtA.ToGeoCoord(), track.endPtB.ToGeoCoord() };
-            GLW.SetLineWidth(4.0f);
-            GLW.EnableLineStipple();
-            GLW.SetLineStipple(1, 0x0F00);
-            GLW.SetColor(referenceLineRed);
-            GLW.DrawLinesPrimitive(abEndPoints);
-            GLW.DisableLineStipple();
 
             // shadow
             double shadowOffset = isHeadingSameWay ? mf.tool.offset : -mf.tool.offset;
@@ -416,8 +419,8 @@ namespace AgOpenGPS
 
             //draw current AB Line
             GeoCoord[] currentAbLine = { currentLinePtA.ToGeoCoord(), currentLinePtB.ToGeoCoord() };
-            LineStyle blackBackgroundStyle = new LineStyle(lineWidth * 3, Colors.Black);
-            LineStyle purpleForgroundStyle = new LineStyle(lineWidth, currentAbLinePurple);
+            LineStyle blackBackgroundStyle = new LineStyle(lineWidth * 3, JohanLook.On ? JohanLook.LineHalo : Colors.Black);
+            LineStyle purpleForgroundStyle = new LineStyle(lineWidth, JohanLook.On ? JohanLook.Line : currentAbLinePurple);
             GLW.DrawLinesPrimitiveLayered(
                 currentAbLine,
                 blackBackgroundStyle,
@@ -446,8 +449,8 @@ namespace AgOpenGPS
                     lines[linesIndex++] = rightEvenLine;
                     lines[linesIndex++] = leftEvenLine;
                 }
-                LineStyle extraGuidelinesBackgroundStyle = new LineStyle(lineWidth * 3, extraGuidelinesBlack);
-                LineStyle extraGuidelinesForegroundStyle = new LineStyle(lineWidth, extraGuidelinesGreen);
+                LineStyle extraGuidelinesBackgroundStyle = new LineStyle(lineWidth * 3, JohanLook.On ? JohanLook.LineHalo : extraGuidelinesBlack);
+                LineStyle extraGuidelinesForegroundStyle = new LineStyle(lineWidth, JohanLook.On ? JohanLook.Guide : extraGuidelinesGreen);
                 GLW.DrawLinesPrimitiveLayered(
                     lines,
                     extraGuidelinesBackgroundStyle,

@@ -1,6 +1,7 @@
 //Please, if you use this, share the improvements
 
 using System;
+using AgLibrary.Johan;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -319,6 +320,9 @@ namespace AgOpenGPS
             // before the designer loads the button images
             JohanLock.Enforce();
             JohanTheme.Init(Settings.Default.setDisplay_isJohanLight);
+            JohanTheme.WriteLightToRegistry(Settings.Default.setDisplay_isJohanLight);   // AgIO follows the same choice
+            JohanTheme.IsOwnForm = f => f is FormStart || f is FormPerceel || f is FormWerktuig
+                                        || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif;
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {
@@ -1326,6 +1330,7 @@ namespace AgOpenGPS
         //close the current job
         public void JobClose()
         {
+            RequestPatchVboReset();
             recPath.resumeState = 0;
             btnResumePath.Image = Properties.Resources.pathResumeStart;
             recPath.currentPositonIndex = 0;

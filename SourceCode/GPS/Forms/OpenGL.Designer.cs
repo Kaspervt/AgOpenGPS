@@ -125,6 +125,7 @@ namespace AgOpenGPS
 
                     GL.LineWidth(2);
 
+                    SweepPatchVbos();
                     for (int j = 0; j < triStrip.Count; j++)
                     {
                         //every time the section turns off and on is a new patch //check if in frustum or not
@@ -175,24 +176,31 @@ namespace AgOpenGPS
                                 {
 
                                     count2 = triList.Count;
-                                    GL.Begin(PrimitiveType.TriangleStrip);
-
-                                    if (isDay) GL.Color4((byte)triList[0].easting, (byte)triList[0].northing, (byte)triList[0].heading, (byte)152);
-                                    else GL.Color4((byte)triList[0].easting, (byte)triList[0].northing, (byte)triList[0].heading, (byte)(152 * 0.5));
-
-                                    //if large enough patch and camera zoomed out, fake mipmap the patches, skip triangles
-                                    if (count2 >= (mipmap + 2))
+                                    // finished patches come from a GPU buffer (OpenGL.JohanPatches.cs); the patch that is
+                                    // still growing, and the optional lines/markers, keep the immediate-mode path
+                                    bool growing = triStrip[j].isDrawing && ReferenceEquals(triList, triStrip[j].triangleList);
+                                    bool fastDrawn = !growing && !isSectionlinesOn && !isDirectionMarkers && DrawPatchVbo(triList, isDay);
+                                    if (!fastDrawn)
                                     {
-                                        int step = mipmap;
-                                        for (int i = 1; i < count2; i += step)
+                                        GL.Begin(PrimitiveType.TriangleStrip);
+
+                                        if (isDay) GL.Color4((byte)triList[0].easting, (byte)triList[0].northing, (byte)triList[0].heading, (byte)152);
+                                        else GL.Color4((byte)triList[0].easting, (byte)triList[0].northing, (byte)triList[0].heading, (byte)(152 * 0.5));
+
+                                        //if large enough patch and camera zoomed out, fake mipmap the patches, skip triangles
+                                        if (count2 >= (mipmap + 2))
                                         {
-                                            GL.Vertex3(triList[i].easting, triList[i].northing, 0); i++;
-                                            GL.Vertex3(triList[i].easting, triList[i].northing, 0); i++;
-                                            if (count2 - i <= (mipmap + 2)) step = 0;//too small to mipmap it
+                                            int step = mipmap;
+                                            for (int i = 1; i < count2; i += step)
+                                            {
+                                                GL.Vertex3(triList[i].easting, triList[i].northing, 0); i++;
+                                                GL.Vertex3(triList[i].easting, triList[i].northing, 0); i++;
+                                                if (count2 - i <= (mipmap + 2)) step = 0;//too small to mipmap it
+                                            }
                                         }
+                                        else { for (int i = 1; i < count2; i++) GL.Vertex3(triList[i].easting, triList[i].northing, 0); }
+                                        GL.End();
                                     }
-                                    else { for (int i = 1; i < count2; i++) GL.Vertex3(triList[i].easting, triList[i].northing, 0); }
-                                    GL.End();
 
                                     if (isSectionlinesOn)
                                     {
@@ -472,8 +480,16 @@ namespace AgOpenGPS
                     GL.PushMatrix();
                     GL.LoadIdentity();
 
+                    // Johan driver screen: the bars above the map draw their own overlays
+                    bool johanScreen = isDriverMode && !isDriverUnlocked;
+
                     //LightBar if AB Line is set and turned on or contour
-                    if (isLightBarNotSteerBar)
+                    if (johanScreen)
+                    {
+                        // keep the smoothed cross-track value up to date for the distance pill
+                        avgPivDistance = avgPivDistance * 0.5 + lightbarDistance * 0.5;
+                    }
+                    else if (isLightBarNotSteerBar)
                     {
                         DrawLightBarText();
                     }
@@ -482,14 +498,14 @@ namespace AgOpenGPS
                         if (isLightbarOn) DrawSteerBarText();
                     }
 
-                    if (trk.idx > -1 && !ct.isContourBtnOn) DrawTrackInfo();
+                    if (!johanScreen && trk.idx > -1 && !ct.isContourBtnOn) DrawTrackInfo();
 
                     if (bnd.bndList.Count > 0 && yt.isYouTurnBtnOn) DrawUTurnBtn();
 
                     if ((isBtnAutoSteerOn || yt.isYouTurnBtnOn) && !ct.isContourBtnOn) DrawManUTurnBtn();
 
                     //if (isCompassOn) DrawCompass();
-                    DrawCompassText();
+                    if (!johanScreen) DrawCompassText();
 
                     if (isSpeedoOn) DrawSpeedo();
 
@@ -1861,7 +1877,7 @@ namespace AgOpenGPS
             GL.Color4(0.9752f, 0.80f, 0.3f, 0.98);
             // one clock string per second instead of one per frame
             if (DateTime.Now.Second != clockSecond) { clockSecond = DateTime.Now.Second; clockText = DateTime.Now.ToString("T"); }
-            font.DrawText(center - 210, oglMain.Height - 26, clockText, 0.8);
+            if (!isDriverMode || isDriverUnlocked) font.DrawText(center - 210, oglMain.Height - 26, clockText, 0.8);
 
             GL.PushMatrix();
 
@@ -1891,12 +1907,13 @@ namespace AgOpenGPS
                 GL.Color4(0.952f, 0.093570f, 0.93f, 0.97);
             }
 
+            bool johanNoDraw = isDriverMode && !isDriverUnlocked;
             GL.Translate(center, bottomSide, 0);
             GL.Rotate(ahrs.imuRoll, 0, 0, 1);
 
-            ScreenTextures.SteerPointer.DrawCenteredAroundOrigin(textureDelta);
+            if (!johanNoDraw) ScreenTextures.SteerPointer.DrawCenteredAroundOrigin(textureDelta);
 
-            if ((ahrs.imuRoll != 88888))
+            if (!johanNoDraw && (ahrs.imuRoll != 88888))
             {
                 string head = Math.Round(ahrs.imuRoll, 1).ToString();
                 font.DrawText((int)(((head.Length) * -9)), -45, head, 1.2);
@@ -1909,7 +1926,7 @@ namespace AgOpenGPS
 
             GL.Translate(center, bottomSide, 0);
 
-            ScreenTextures.SteerDot.DrawCenteredAroundOrigin(textureDelta);
+            if (!johanNoDraw) ScreenTextures.SteerDot.DrawCenteredAroundOrigin(textureDelta);
 
             GL.PopMatrix();
         }

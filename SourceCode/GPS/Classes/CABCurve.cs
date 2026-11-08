@@ -1,4 +1,4 @@
-﻿using AgLibrary.Logging;
+using AgLibrary.Logging;
 using AgOpenGPS.Core.Drawing;
 using AgOpenGPS.Core.DrawLib;
 using AgOpenGPS.Core.Models;
@@ -1071,20 +1071,23 @@ namespace AgOpenGPS
             {
                 if (mf.trk.gArr[mf.trk.idx].curvePts == null || mf.trk.gArr[mf.trk.idx].curvePts.Count == 0) return;
 
-                GL.LineWidth(4);
-                GL.Color3(0.96, 0.2f, 0.2f);
-                GL.Begin(PrimitiveType.Lines);
+                if (!JohanLook.On)
+                {
+                    GL.LineWidth(4);
+                    GL.Color3(0.96, 0.2f, 0.2f);
+                    GL.Begin(PrimitiveType.Lines);
 
-                for (int h = 0; h < ptCount; h++) GL.Vertex3(
-                    mf.trk.gArr[mf.trk.idx].curvePts[h].easting,
-                    mf.trk.gArr[mf.trk.idx].curvePts[h].northing,
-                    0);
+                    for (int h = 0; h < ptCount; h++) GL.Vertex3(
+                        mf.trk.gArr[mf.trk.idx].curvePts[h].easting,
+                        mf.trk.gArr[mf.trk.idx].curvePts[h].northing,
+                        0);
 
-                GL.End();
+                    GL.End();
 
-                GL.Color3(0.40f, 0.90f, 0.95f);
-                mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptA.easting, mf.trk.gArr[mf.trk.idx].ptA.northing, "&A", mf.camHeading);
-                mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptB.easting, mf.trk.gArr[mf.trk.idx].ptB.northing, "&B", mf.camHeading);
+                    GL.Color3(0.40f, 0.90f, 0.95f);
+                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptA.easting, mf.trk.gArr[mf.trk.idx].ptA.northing, "&A", mf.camHeading);
+                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptB.easting, mf.trk.gArr[mf.trk.idx].ptB.northing, "&B", mf.camHeading);
+                }
 
                 if (isSmoothWindowOpen)
                 {
@@ -1102,7 +1105,7 @@ namespace AgOpenGPS
                 if (curList.Count > 0)
                 {
                     GL.LineWidth(mf.ABLine.lineWidth * 3);
-                    GL.Color3(0, 0, 0);
+                    if (JohanLook.On) GLW.SetColor(JohanLook.LineHalo); else GL.Color3(0, 0, 0);
 
                     //ablines and curves are a line - the rest a loop
                     if (mf.trk.gArr[mf.trk.idx].mode <= TrackMode.Curve)
@@ -1126,7 +1129,7 @@ namespace AgOpenGPS
                     GL.End();
 
                     GL.LineWidth(mf.ABLine.lineWidth);
-                    GL.Color3(0.95f, 0.2f, 0.95f);
+                    if (JohanLook.On) GLW.SetColor(JohanLook.Line); else GL.Color3(0.95f, 0.2f, 0.95f);
                     if (mf.trk.gArr[mf.trk.idx].mode <= TrackMode.Curve)
                     {
                         GL.Begin(PrimitiveType.LineStrip);

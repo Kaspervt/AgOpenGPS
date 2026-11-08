@@ -1,4 +1,4 @@
-﻿//Please, if you use this, share the improvements
+//Please, if you use this, share the improvements
 
 using AgOpenGPS.Core.Drawing;
 using AgOpenGPS.Core.DrawLib;
@@ -180,7 +180,7 @@ namespace AgOpenGPS
             }
 
             //draw the vehicle Body
-            if (!mf.isFirstHeadingSet && mf.headingFromSource != "Dual")
+            if (!JohanLook.On && !mf.isFirstHeadingSet && mf.headingFromSource != "Dual")
             {
                 GL.Color4(1, 1, 1, 0.75);
                 mf.ScreenTextures.QuestionMark.Draw(new XyCoord(1.0, 5.0), new XyCoord(5.0, 1.0));
@@ -193,7 +193,11 @@ namespace AgOpenGPS
                 VehicleConfig.Color.Blue,
                 (byte)(255.0 * VehicleConfig.Opacity));
 
-            if (VehicleConfig.IsImage)
+            if (JohanLook.On)
+            {
+                JohanLook.DrawVehicleArrow(VehicleConfig.Wheelbase, VehicleConfig.Opacity);
+            }
+            else if (VehicleConfig.IsImage)
             {
                 if (VehicleConfig.Type == VehicleType.Tractor)
                 {

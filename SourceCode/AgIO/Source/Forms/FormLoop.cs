@@ -94,7 +94,9 @@ namespace AgIO
                     "AgIO profile was recovered from .last backup because the main file was unreadable.");
             }
 
-            if (Settings.Default.setDisplay_StartMinimized)
+            // Johan fork: the driver never needs this window; it starts out of the way
+            // (AgOpenGPS opens it on request from its Beheer page)
+            if (Settings.Default.setDisplay_StartMinimized || JohanThemeIO.IsOn)
             {
                 this.WindowState = FormWindowState.Minimized;
             }
@@ -241,6 +243,15 @@ namespace AgIO
 
             this.Text =
             "AgIO  v" + Program.Version + " Profile: " + RegistrySettings.profileName;
+
+            // Johan fork: pinned installation (johan.lock next to the exe) never asks for a profile,
+            // it quietly works under the profile "Johan"
+            if (RegistrySettings.profileName == "" && System.IO.File.Exists(System.IO.Path.Combine(Application.StartupPath, "johan.lock")))
+            {
+                RegistrySettings.Save(RegKeys.profileName, "Johan");
+                Log.EventWriter("Johan lock: profile set to Johan without asking");
+                this.Text = "AgIO  v" + Program.Version + " Profile: " + RegistrySettings.profileName;
+            }
 
             if (RegistrySettings.profileName == "")
             {

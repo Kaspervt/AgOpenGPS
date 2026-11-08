@@ -78,6 +78,63 @@ namespace AgOpenGPS
             }
 
             btnDeleteAll.Enabled = true;
+
+            if (AutoCapture) StartAutoCapture();
+        }
+
+        // Johan fork: one tap on the aerial-photo button fetches the photo for the open field.
+        // The map is fitted to the field boundary (or the position), the tiles get time to load,
+        // then the same capture as the "background" checkbox runs and the window closes itself.
+        public bool AutoCapture;
+        private Timer autoTimer;
+        private int autoTicks;
+        private bool tilesLoaded;
+
+        private void StartAutoCapture()
+        {
+            try
+            {
+                if (mf.bnd.bndList.Count > 0 && mf.bnd.bndList[0].fenceLine.Count > 2)
+                {
+                    double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+                    foreach (var p in mf.bnd.bndList[0].fenceLine)
+                    {
+                        Wgs84 w = mf.AppModel.LocalPlane.ConvertGeoCoordToWgs84(new GeoCoord(p.northing, p.easting));
+                        if (w.Latitude < minLat) minLat = w.Latitude; if (w.Latitude > maxLat) maxLat = w.Latitude;
+                        if (w.Longitude < minLon) minLon = w.Longitude; if (w.Longitude > maxLon) maxLon = w.Longitude;
+                    }
+                    double padLat = (maxLat - minLat) * 0.08 + 0.0002, padLon = (maxLon - minLon) * 0.08 + 0.0003;
+                    gMapControl.SetZoomToFitRect(RectLatLng.FromLTRB(minLon - padLon, maxLat + padLat, maxLon + padLon, minLat - padLat));
+                }
+                else
+                {
+                    gMapControl.Zoom = 17;
+                }
+            }
+            catch (Exception ex) { Log.EventWriter("Aerial auto capture: fit failed: " + ex.Message); }
+
+            gMapControl.OnTileLoadComplete += (ms) => tilesLoaded = true;
+            tilesLoaded = false;
+            autoTimer = new Timer { Interval = 500 };
+            autoTimer.Tick += (s, e) =>
+            {
+                autoTicks++;
+                // at least 2 s for the tiles, capture as soon as a load round is complete, give up waiting at 10 s
+                if ((autoTicks >= 4 && tilesLoaded) || autoTicks >= 20)
+                {
+                    autoTimer.Stop();
+                    try
+                    {
+                        cboxDrawMap.Checked = true;
+                        cboxDrawMap_Click(cboxDrawMap, EventArgs.Empty);
+                        Log.EventWriter("Aerial photo captured for " + mf.currentFieldDirectory);
+                    }
+                    catch (Exception ex) { Log.EventWriter("Aerial auto capture failed: " + ex.Message); }
+                    isClosing = true;
+                    Close();
+                }
+            };
+            autoTimer.Start();
         }
 
         private void FormMap_FormClosing(object sender, FormClosingEventArgs e)
