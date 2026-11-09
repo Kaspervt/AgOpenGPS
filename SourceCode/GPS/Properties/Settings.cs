@@ -77,6 +77,10 @@ namespace AgOpenGPS.Properties
         public bool setDisplay_johanThemaKlok = false;        // theme follows the clock: light by day (7-19 h), dark at night
         public bool setDisplay_johanKopakkerPiep = true;      // beep when the tool crosses into the headland
         public double setDisplay_johanKopakkerPiepAfstand = 0;   // metres ahead of the tool at which the beep comes
+        public string setDisplay_johanTabletNaam = "";            // name of this tablet when sharing; empty = the tractor profile name
+        public string setDisplay_johanDeelGroep = "";             // group code shared by the tablets of one farm (mailbox)
+        public bool setDisplay_johanDelenOntvangen = true;        // look in the mailbox and ask when a field arrives
+        public string setDisplay_johanBrievenbus = "https://wur.vantilburg.tools/gps-delen";   // the mailbox on the field server
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
         public bool setDisplay_isDebugOn = false;

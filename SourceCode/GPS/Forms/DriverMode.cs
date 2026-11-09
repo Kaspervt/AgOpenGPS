@@ -61,7 +61,7 @@ namespace AgOpenGPS
             panelLeft.VisibleChanged += (s, e) => LayoutJohan();
 
             johanTick = new Timer { Interval = 500 };
-            johanTick.Tick += (s, e) => { try { UpdateJohanBars(); JohanThemaKlok(); } catch (Exception ex) { Log.EventWriter("Driver bars: " + ex.Message); } };
+            johanTick.Tick += (s, e) => { try { UpdateJohanBars(); JohanThemaKlok(); JohanDelenPoll(); } catch (Exception ex) { Log.EventWriter("Driver bars: " + ex.Message); } };
             johanTick.Start();
 
             // LoadSettings ran before the bars existed; lay them out now

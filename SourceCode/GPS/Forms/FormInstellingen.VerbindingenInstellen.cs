@@ -91,6 +91,9 @@ namespace AgOpenGPS
             RijGetal(k, "Positie melden elke", "s", () => JohanAgIO.Getal(d, "setNTRIP_sendGGAInterval", 10), v => zet("setNTRIP_sendGGAInterval", ((int)v).ToString()), 0, 120, 5, 0,
                 "Het basisstation wil weten waar je bent. 0 is nooit");
 
+            // The mailbox for sharing fields between tablets (JohanBrievenbus): normally never changed
+            RijTekst(k, "Brievenbus voor delen", () => Settings.Default.setDisplay_johanBrievenbus, "Adres op de veldserver, staat in het instellingenbestand");
+
             // Apply: AgIO reads its profile at start, so restart it
             var vak = Rij(k, "Opnieuw verbinden", "AgIO start opnieuw met deze instellingen");
             var knop = Knop(vak, 0, S(200), "Nu verbinden", () =>

@@ -86,6 +86,16 @@ namespace AgOpenGPS
                 double lon = mf.AppModel.CurrentLatLon.Longitude;
                 return Komma(Math.Abs(lat), 5) + " " + (lat >= 0 ? "N" : "Z") + "   " + Komma(Math.Abs(lon), 5) + " " + (lon >= 0 ? "O" : "W");
             });
+
+            // Sharing fields with the other tablets of the farm (canvas 18): name, group code, receive
+            var d2 = Hoofdstuk("Delen met andere tablets", "Percelen versturen en ontvangen. Alleen met dezelfde groepscode zien tablets elkaar.");
+            RijTekstInvoer(d2, "Deze tablet heet", () => JohanDelen.TabletNaam, v => { Settings.Default.setDisplay_johanTabletNaam = v; Toepassen(); }, "Leeg = de naam van de trekker");
+            RijTekstInvoer(d2, "Groepscode", () => Settings.Default.setDisplay_johanDeelGroep, v => { Settings.Default.setDisplay_johanDeelGroep = v; Toepassen(); }, "Dezelfde code op alle tablets van het bedrijf");
+            RijAanUit(d2, "Percelen ontvangen", () => Settings.Default.setDisplay_johanDelenOntvangen, v => { Settings.Default.setDisplay_johanDelenOntvangen = v; Toepassen(); }, "Uit: deze tablet krijgt geen vragen");
+            RijStatus(d2, "Brievenbus",
+                () => !JohanBrievenbus.Ingesteld ? JohanTheme.Grey : string.IsNullOrEmpty(JohanBrievenbus.LaatsteFout) ? JohanTheme.Green : JohanTheme.Amber,
+                () => !JohanBrievenbus.Ingesteld ? "Nog geen groepscode" : string.IsNullOrEmpty(JohanBrievenbus.LaatsteFout) ? "Bereikbaar" : "Niet bereikbaar: " + JohanBrievenbus.LaatsteFout,
+                "Op de veldserver; elke halve minuut gekeken, alleen met internet");
         }
     }
 }

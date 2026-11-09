@@ -132,6 +132,35 @@ namespace AgOpenGPS
             nieuw.FlatAppearance.BorderSize = 0;
             nieuw.Click += (s, e) => { WantsNewField = true; Close(); };
             Controls.Add(nieuw);
+
+            // Sharing: fields to a stick or another tablet, and fields from a stick (canvas 16 and 18)
+            var delen = new JohanRoundButton
+            {
+                Text = "Delen",
+                Image = JohanSkin.Icon("cloud-upload_licht_64", 26),
+                Bounds = new Rectangle(x + S(216), h - S(100), S(170), S(64)),
+                BackColor = panel,
+                ForeColor = text,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold)
+            };
+            delen.FlatAppearance.BorderSize = 0;
+            delen.Click += (s, e) => { using (var f = new FormDelen(mf)) f.ShowDialog(this); };
+            Controls.Add(delen);
+
+            var stick = new JohanRoundButton
+            {
+                Text = "Van de stick",
+                Image = JohanSkin.Icon("file-import_licht_64", 26),
+                Bounds = new Rectangle(x + S(402), h - S(100), S(220), S(64)),
+                BackColor = panel,
+                ForeColor = text,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold)
+            };
+            stick.FlatAppearance.BorderSize = 0;
+            stick.Click += (s, e) => { if (mf.JohanVanStick(this)) { Close(); } };
+            Controls.Add(stick);
         }
 
         private Label Lbl(string t, int x, int y, Color c, float size, FontStyle style, string dir)

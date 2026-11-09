@@ -323,7 +323,8 @@ namespace AgOpenGPS
             JohanTheme.WriteLightToRegistry(Settings.Default.setDisplay_isJohanLight);   // AgIO follows the same choice
             JohanTheme.IsOwnForm = f => f is FormStart || f is FormPerceel || f is FormWerktuig
                                         || f is FormBeheer || f is FormNieuwPerceel || f is FormVerschuif
-                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten || f is FormLijnKeuze || f is FormGetal || f is FormInstellingen || f is FormTekst || f is FormStuurtest;
+                                        || f is FormKopakker || f is FormWerktuigBewerken || f is FormAfsluiten || f is FormLijnKeuze || f is FormGetal || f is FormInstellingen || f is FormTekst || f is FormStuurtest
+                                        || f is FormDelen || f is FormOntvangen || f is FormOntvangBar;
             if (Settings.Default.setDisplay_isJohanIcons) JohanSkin.Install();
             if (Settings.Default.setDisplay_isDriverMode)
             {
@@ -703,6 +704,46 @@ namespace AgOpenGPS
                     try { await FileOpenField("Resume"); }
                     catch (Exception ex) { Log.EventWriter("Kiosk auto-resume failed: " + ex.Message); }
                 }));
+            }
+
+            // Test aid: "--ontvang <bestand>" opens a share package from a file after 12 s, as if it came
+            // from the stick or the mailbox (JohanDelen format). Also handy to try a package by hand.
+            int ontvangArg = Array.IndexOf(Environment.GetCommandLineArgs(), "--ontvang");
+            if (ontvangArg >= 0 && ontvangArg + 1 < Environment.GetCommandLineArgs().Length)
+            {
+                string pakketPad = Environment.GetCommandLineArgs()[ontvangArg + 1];
+                var ontvangTimer = new Timer { Interval = 12000 };
+                ontvangTimer.Tick += (snapSender, snapArgs) =>
+                {
+                    ontvangTimer.Stop();
+                    try
+                    {
+                        var p = JohanDelen.VanTekst(File.ReadAllText(pakketPad));
+                        p.Bron = pakketPad;
+                        // "--snapshot-ontvangen <png>" writes the receive page and the sharing page to PNG instead (works on a locked screen)
+                        int snap = Array.IndexOf(Environment.GetCommandLineArgs(), "--snapshot-ontvangen");
+                        if (Array.IndexOf(Environment.GetCommandLineArgs(), "--ontvang-overnemen") >= 0)
+                        {
+                            // test aid: take everything over with the default choices and write what happened next to the package
+                            var regels = new List<string>();
+                            foreach (var veld in p.Percelen) regels.Add(JohanDelen.Overnemen(JohanDelen.Vergelijk(veld, this), this));
+                            File.WriteAllLines(pakketPad + ".resultaat.txt", regels);
+                        }
+                        else if (snap >= 0 && snap + 1 < Environment.GetCommandLineArgs().Length)
+                        {
+                            string png = Environment.GetCommandLineArgs()[snap + 1];
+                            JohanSnapshot(new FormOntvangen(this, p), png);
+                            JohanSnapshot(new FormDelen(this), Path.ChangeExtension(png, null) + "-delen.png");
+                            JohanSnapshot(new FormOntvangBar(this, p, b => { }), Path.ChangeExtension(png, null) + "-balk.png");
+                        }
+                        else
+                        {
+                            new FormOntvangBar(this, p, bekeken => Log.EventWriter("Delen: test package " + (bekeken ? "viewed" : "refused"))).Show(this);
+                        }
+                    }
+                    catch (Exception ex) { Log.EventWriter("Delen: test package failed: " + ex.Message); }
+                };
+                ontvangTimer.Start();
             }
 
             // Debug aid: "--snapshot-perceel <png>" opens the field picker after 12 s so it can write itself
