@@ -530,6 +530,9 @@ namespace AgOpenGPS
 
             if (RegistrySettings.vehicleProfileName != "" && Properties.Settings.Default.setDisplay_isAutoStartAgIO)
             {
+                // Johan fork: AgIO works under the profile of the tractor (same name), so the connections follow the vehicle
+                JohanAgIO.KoppelAanTrekker(RegistrySettings.vehicleProfileName, herstart: false);
+
                 //Start AgIO process
                 Process[] processName = Process.GetProcessesByName("AgIO");
                 if (processName.Length == 0)

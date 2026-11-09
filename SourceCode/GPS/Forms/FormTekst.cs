@@ -22,9 +22,10 @@ namespace AgOpenGPS
         private static int S(int px) => JohanTheme.S(px);
 
         // Returns the typed text, or null when cancelled or empty
-        public static string Vraag(IWin32Window owner, string titel, string huidig, int maxLengte = 40)
+        // hoofdletters = false: starts in lower case (addresses, user names, mountpoints)
+        public static string Vraag(IWin32Window owner, string titel, string huidig, int maxLengte = 40, bool hoofdletters = true)
         {
-            using (var f = new FormTekst(titel, huidig ?? "", maxLengte))
+            using (var f = new FormTekst(titel, huidig ?? "", maxLengte, hoofdletters))
             {
                 if (f.ShowDialog(owner) != DialogResult.OK) return null;
                 string t = f.Waarde.Trim();
@@ -32,9 +33,10 @@ namespace AgOpenGPS
             }
         }
 
-        public FormTekst(string titel, string huidig, int maxLengte)
+        public FormTekst(string titel, string huidig, int maxLengte, bool hoofdletters = true)
         {
             this.maxLengte = maxLengte;
+            hoofdletter = hoofdletters;
             tekst = huidig;
             Name = "FormTekst";
             FormBorderStyle = FormBorderStyle.None;
@@ -83,7 +85,8 @@ namespace AgOpenGPS
             int y4 = ky + 4 * (kh + gap);
             var shift = Toets(new Rectangle(x, y4, S(130), kh), "⇧ Hoofdletter", () => { hoofdletter = !hoofdletter; ZetLetters(); });
             shift.Font = JohanTheme.Font(12F, FontStyle.Bold);
-            Toets(new Rectangle(x + S(138), y4, S(440), kh), "spatie", () => Typ(" "));
+            Toets(new Rectangle(x + S(138), y4, S(360), kh), "spatie", () => Typ(" "));
+            Toets(new Rectangle(x + S(506), y4, S(72), kh), ".", () => Typ("."));   // addresses (ntrip.example.nl)
             Toets(new Rectangle(x + S(586), y4, kw, kh), "-", () => Typ("-"));
             var back = Toets(new Rectangle(x + S(586) + kw + gap, y4, S(120), kh), "⌫", () => { if (eersteToets) { tekst = ""; eersteToets = false; } else if (tekst.Length > 0) tekst = tekst.Substring(0, tekst.Length - 1); Toon(); });
             var wis = Toets(new Rectangle(x + S(586) + kw + gap + S(128), y4, S(90), kh), "Wis", () => { tekst = ""; eersteToets = false; Toon(); });

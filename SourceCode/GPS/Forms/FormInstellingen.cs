@@ -41,6 +41,7 @@ namespace AgOpenGPS
             {
                 HoofdstukGpsRichting();
                 HoofdstukTrekker();
+                HoofdstukVerbindingenInstellen();
                 HoofdstukSturen();
                 HoofdstukMachineRelais();
             }
@@ -312,6 +313,27 @@ namespace AgOpenGPS
                 x += w + S(8);
             }
             verversers.Add(() => { stip.BackColor = kleur(); stip.Invalidate(); lbl.Text = tekst(); });
+        }
+
+        // Text value: a wide button showing the value, a tap opens the keyboard (FormTekst).
+        // maskeren = true shows dots (passwords). Lower case start: addresses and names are case sensitive.
+        protected void RijTekstInvoer(Panel kaart, string label, Func<string> lees, Action<string> schrijf, string hint = null, bool maskeren = false)
+        {
+            var vak = Rij(kaart, label, hint);
+            var b = Knop(vak, 0, S(420), "", () =>
+            {
+                string nieuw = FormTekst.Vraag(this, label, lees(), 80, false);
+                if (nieuw != null) schrijf(nieuw);
+            });
+            b.TextAlign = ContentAlignment.MiddleLeft;
+            b.Padding = new Padding(S(12), 0, 0, 0);
+            b.Font = JohanTheme.Font(13F);
+            verversers.Add(() =>
+            {
+                string v = lees() ?? "";
+                b.Text = v.Length == 0 ? "leeg" : (maskeren ? new string('•', v.Length) : v);
+                b.ForeColor = v.Length == 0 ? JohanTheme.Muted : JohanTheme.Text;
+            });
         }
 
         // Plain text on the right (refreshed), for information

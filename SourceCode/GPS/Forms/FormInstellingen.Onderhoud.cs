@@ -16,7 +16,7 @@ namespace AgOpenGPS
             var k = Hoofdstuk("Onderhoud en programma", "Versie, logboek, importeren en de originele vensters.");
 
             // Version: the AgOpenGPS version this fork is built on, marked as the Johan build
-            RijTekst(k, "Versie", () => "AgOpenGPS " + Program.Version + " + johan");
+            RijTekst(k, "Versie", () => "Bewerking Kasper van Tilburg, op basis van AgOpenGPS " + Program.Version);
 
             // Event log of AgOpenGPS (FormEventViewer), same as the Beheer screen
             RijKnoppen(k, "Logboek", "Meldingen en storingen van vandaag",

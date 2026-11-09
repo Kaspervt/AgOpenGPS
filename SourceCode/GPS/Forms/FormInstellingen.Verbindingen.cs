@@ -1,36 +1,42 @@
 using System;
 using System.Drawing;
 using AgLibrary.Johan;
+using AgOpenGPS.Properties;
 
 namespace AgOpenGPS
 {
     // Johan fork: chapter "Verbindingen" of the settings page. Status only, nothing is written here.
     // The colours and texts follow the start screen (FormStart.UpdateStatus) so both say the same thing.
-    // Connection settings themselves (ports, NTRIP) live in AgIO; the buttons open that window.
+    // The settings themselves (ports, base station) are in the advanced chapter "Verbindingen instellen";
+    // they live in the AgIO profile that carries the tractor's name (JohanAgIO).
     public partial class FormInstellingen
     {
         private void HoofdstukVerbindingen()
         {
-            var k = Hoofdstuk("Verbindingen", "Wat nu aan de tablet hangt. Dit was het AgIO-venster.");
+            var k = Hoofdstuk("Verbindingen", "Wat nu aan de tablet hangt.");
 
             // Same sources as the start screen: fix quality, NMEA sentence counter, steer board counter
             Func<int> fq = () => mf.pn.fixQuality;
             Func<bool> gpsOk = () => fq() > 0 && mf.sentenceCounter < 20;
             Func<bool> printOk = () => gpsOk() && mf.steerModuleConnectedCounter < 30;
 
+            // The connection profile of this tractor, read once for the hints below
+            string profiel = string.IsNullOrEmpty(RegistrySettings.vehicleProfileName) ? JohanAgIO.ActiefProfiel : RegistrySettings.vehicleProfileName;
+            var d = JohanAgIO.Lees(profiel);
+            bool netwerk = JohanAgIO.Ja(d, "setUDP_isOn");
+            bool gpsUsb = JohanAgIO.Ja(d, "setPort_wasGPSConnected");
+
             // GPS receiver
             RijStatus(k, "GPS-ontvanger",
                 () => gpsOk() ? JohanTheme.Green : JohanTheme.Red,
                 () => gpsOk() ? mf.pn.satellitesTracked + " satellieten" : "Geen positie",
-                "Poort en snelheid stel je in AgIO in",
-                ("AgIO openen", () => mf.BeheerOpenAgIO()));
+                gpsUsb ? "USB " + JohanAgIO.Tekst(d, "setPort_portNameGPS") + ", " + JohanAgIO.Tekst(d, "setPort_baudRateGPS") + " baud" : "Via het netwerk");
 
             // Steer board; the counter only runs inside the position loop, so without GPS it says nothing
             RijStatus(k, "Stuurprint",
                 () => printOk() ? JohanTheme.Green : JohanTheme.Red,
                 () => printOk() ? "Verbonden" : gpsOk() ? "Geen verbinding met de stuurprint" : "Onbekend zonder GPS",
-                "Netwerk of USB",
-                ("AgIO openen", () => mf.BeheerOpenAgIO()));
+                netwerk ? "Via het netwerk" : "USB " + JohanAgIO.Tekst(d, "setPort_portNameSteer"));
 
             // RTK corrections: fix / float / none, with the age of the last correction
             RijStatus(k, "RTK-correcties",
@@ -47,11 +53,14 @@ namespace AgOpenGPS
                     if (q == 8) { return "Simulator"; }
                     return "Geen correcties";
                 },
-                "Komen via NTRIP binnen in AgIO");
+                "Komen van het basisstation");
 
-            // Base station: NTRIP caster, mountpoint and login live in AgIO's own settings
-            RijKnoppen(k, "Basisstation", "Adres, poort, mountpoint en inlog staan in AgIO",
-                ("Instellen in AgIO", () => mf.BeheerOpenAgIO()));
+            // Base station: what is set for this tractor; changing it is an advanced matter
+            RijTekst(k, "Basisstation",
+                () => JohanAgIO.Ja(d, "setNTRIP_isOn")
+                    ? JohanAgIO.Tekst(d, "setNTRIP_casterURL") + "  " + JohanAgIO.Tekst(d, "setNTRIP_mount")
+                    : "Uit",
+                "Instellen onder Geavanceerd, Verbindingen instellen");
 
             // Tractor: the steer angle coming back from the board is the sign the tractor is there
             RijStatus(k, "Trekker (CAN)",
@@ -59,7 +68,7 @@ namespace AgOpenGPS
                 () => printOk() && Math.Abs(mf.mc.actualSteerAngleDegrees) < 60
                     ? "Stuurhoek " + Komma(mf.mc.actualSteerAngleDegrees, 1) + " graden"
                     : "Wacht op de trekker",
-                "Stuurhoek die van de trekker terugkomt");
+                "Profiel " + profiel);
 
             // Tilt sensor: 99999 is AgOpenGPS's "no IMU heading" marker, 88888 the "no roll" marker
             RijStatus(k, "Hellingsensor (IMU)",
@@ -77,10 +86,6 @@ namespace AgOpenGPS
                 double lon = mf.AppModel.CurrentLatLon.Longitude;
                 return Komma(Math.Abs(lat), 5) + " " + (lat >= 0 ? "N" : "Z") + "   " + Komma(Math.Abs(lon), 5) + " " + (lon >= 0 ? "O" : "W");
             });
-
-            // The original connections window, full screen
-            RijKnoppen(k, "AgIO-venster", "Het originele verbindingenvenster, beeldvullend",
-                ("Openen", () => mf.BeheerOpenAgIO()));
         }
     }
 }

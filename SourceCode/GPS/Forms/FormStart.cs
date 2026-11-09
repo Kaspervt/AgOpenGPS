@@ -29,7 +29,7 @@ namespace AgOpenGPS
         private readonly Color red = Color.FromArgb(220, 38, 38);
 
         private readonly StatusRow[] rows = new StatusRow[4];
-        private Label lblField;
+        private Label lblField, lblTitle;
 
         // design sizes in 96-dpi pixels; S() scales them to the screen (see JohanTheme.Schaal)
         private static int S(int px) => JohanTheme.S(px);
@@ -73,14 +73,14 @@ namespace AgOpenGPS
 
             var lblSub = new Label
             {
-                Text = "AgOpenGPS",
+                Text = "Kasper van Tilburg  ·  op basis van AgOpenGPS",
                 ForeColor = muted,
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 AutoSize = true,
                 Location = new Point(S(40), h - S(150))
             };
-            var lblTitle = new Label
+            lblTitle = new Label
             {
                 Text = RegistrySettings.vehicleProfileName,
                 ForeColor = text,
@@ -158,6 +158,13 @@ namespace AgOpenGPS
                 Controls.Add(rows[i]);
                 y += S(74);
             }
+
+            // The tractor row names the profile; "Andere trekker" switches profile (and with it the
+            // connections), so the tablet can move from one tractor to another
+            rows[3].Knop("Andere trekker", () =>
+            {
+                if (mf.JohanKiesTrekkerprofiel(this)) UpdateStatus();
+            });
 
             // no tool choice here: the last tool and field load by themselves, switching is one tap on the driving screen
 
@@ -267,6 +274,8 @@ namespace AgOpenGPS
 
             // Tractor: steer angle comes back from the board
             bool tractorOk = boardOk && Math.Abs(mf.mc.actualSteerAngleDegrees) < 60;
+            rows[3].Naam("Trekker: " + (string.IsNullOrEmpty(RegistrySettings.vehicleProfileName) ? "geen profiel" : RegistrySettings.vehicleProfileName));
+            if (lblTitle != null && lblTitle.Text != RegistrySettings.vehicleProfileName) lblTitle.Text = RegistrySettings.vehicleProfileName;
             rows[3].Set(tractorOk ? green : amber,
                 tractorOk ? "Stuurhoek " + mf.mc.actualSteerAngleDegrees.ToString("0.0") + " graden" : "Wacht op de trekker");
 
@@ -326,6 +335,30 @@ namespace AgOpenGPS
             {
                 if (dot != c) { dot = c; Invalidate(); }
                 if (lblDetail.Text != detail) lblDetail.Text = detail;
+            }
+
+            public void Naam(string naam)
+            {
+                if (lblName.Text != naam) lblName.Text = naam;
+            }
+
+            // A button at the right end of the row
+            public void Knop(string tekst, Action actie)
+            {
+                var b = new JohanRoundButton
+                {
+                    Text = tekst,
+                    Size = new Size(S(190), S(48)),
+                    BackColor = JohanTheme.PanelLight,
+                    ForeColor = lblName.ForeColor,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                    Anchor = AnchorStyles.Right | AnchorStyles.Top
+                };
+                b.Location = new Point(Width - b.Width - S(10), S(8));
+                b.FlatAppearance.BorderSize = 0;
+                b.Click += (s, e) => actie();
+                Controls.Add(b);
             }
 
             protected override void OnPaint(PaintEventArgs e)
