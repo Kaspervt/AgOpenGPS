@@ -175,17 +175,22 @@ namespace AgOpenGPS
         {
             if (string.IsNullOrEmpty(naam) || naam == RegistrySettings.vehicleProfileName) return false;
             bool veldOpen = isJobStarted;
+            bool veldGesloten = false;   // set once the field is closed, so a failure can open it again
             try
             {
                 if (veldOpen)
                 {
                     await FileSaveEverythingBeforeClosingField();
+                    veldGesloten = true;
                 }
                 VehicleSettings.Default.Save();   // keep unsaved changes of the current profile
                 var result = VehicleSettings.Default.Load(naam);
                 if (result != LoadResult.Ok)
                 {
                     Log.EventWriter($"Trekker: error loading vehicle {naam}.xml ({result})");
+                    // the failed load may have touched the settings: take the current tractor again
+                    VehicleSettings.Default.Load(RegistrySettings.vehicleProfileName);
+                    await JohanVeldTerug(veldGesloten);
                     TimedMessageBox(3000, "Trekker", "Kon " + naam + " niet laden");
                     return false;
                 }
@@ -208,8 +213,23 @@ namespace AgOpenGPS
             catch (Exception ex)
             {
                 Log.EventWriter("Trekker: vehicle load failed: " + ex.Message);
+                await JohanVeldTerug(veldGesloten && !isJobStarted);
                 TimedMessageBox(3000, "Trekker", "Wisselen mislukt: " + ex.Message);
                 return false;
+            }
+        }
+
+        // After a failed tractor switch: open the field that was closed for it, so the driver keeps working
+        private async Task JohanVeldTerug(bool openen)
+        {
+            if (!openen) return;
+            try
+            {
+                await FileOpenField("Resume");
+            }
+            catch (Exception ex)
+            {
+                Log.EventWriter("Trekker: reopening field failed: " + ex.Message);
             }
         }
     }
